@@ -1,14 +1,14 @@
-# 🚀 QUICKSTART - Démarrer l'Application en 5 Minutes
+# QUICKSTART - Démarrer l'Application en 5 Minutes
 
-## ⚡ Prérequis
+## Prérequis
 
-- ✅ Python 3.11+ (Backend)
-- ✅ Flutter 3.10.7+ (Frontend)  
-- ✅ PostgreSQL (ou SQLite pour dev)
+- Python 3.11+ (Backend)
+- Flutter 3.10.7+ (Frontend)  
+- PostgreSQL (ou SQLite pour dev)
 
 ---
 
-## 🔥 Démarrage Rapide
+## Démarrage Rapide
 
 ### Terminal 1: Backend Django
 
@@ -19,10 +19,10 @@ cd /home/miles/Documents/Projet/gestion_reclamations
 source .venv/bin/activate
 
 # Démarrer le serveur
-python manage.py runserver 0.0.0.0:8001
+python manage.py runserver 0.0.0.0:8000
 ```
 
-✅ **Backend prêt**: http://localhost:8001
+**Backend prêt**: http://localhost:8000
 
 ---
 
@@ -35,11 +35,11 @@ cd /home/miles/Documents/Projet/reclamation_app
 flutter run -d linux    # ou -d chrome pour web
 ```
 
-✅ **Frontend prêt**: App lance automatiquement
+**Frontend prêt**: App lance automatiquement
 
 ---
 
-## 🎯 D'abord: Test Backend API
+## D'abord: Test Backend API
 
 Vérifier que l'API fonctionne:
 
@@ -49,19 +49,19 @@ python3 /home/miles/Documents/Projet/test_complete_integration.py
 
 **Résultat attendu**:
 ```
-✅ Citoyen registered
-✅ Citoyen logged in
-✅ Ticket created: ID=3, Status=OUVERT
-✅ Technicien created
-✅ Technicien logged in
-✅ Admin Dashboard: 3 tickets, 2 techniciens, 6 citoyens
+Citoyen registered
+Citoyen logged in
+Ticket created: ID=3, Status=OUVERT
+Technicien created
+Technicien logged in
+Admin Dashboard: 3 tickets, 2 techniciens, 6 citoyens
 ```
 
 ---
 
-## 💻 Utiliser l'Application
+## Utiliser l'Application
 
-### 1️⃣ Login Admin
+### Login Admin
 
 ```
 Email: bigglazer@gmail.com
@@ -70,14 +70,14 @@ Password: pass1234
 
 **Voir**: AdminDashboardScreen avec statistiques en temps réel
 
-### 2️⃣ Créer Citoyen
+### Créer Citoyen
 
 - Clic: "S'inscrire" sur login screen
 - Remplir le formulaire
 - Login avec les credentials créés
 - Voir TicketListScreen
 
-### 3️⃣ Créer Technicien
+### Créer Technicien
 
 - Login admin
 - Clic: "Créer Utilisateur"
@@ -87,7 +87,7 @@ Password: pass1234
 
 ---
 
-## 📊 Endpoints à Tester
+## Endpoints à Tester
 
 ```bash
 # Admin Login
@@ -114,7 +114,7 @@ Header: Authorization: Bearer {token}
 
 ---
 
-## 🔍 Diagnostiquer les Problèmes
+## Diagnostiquer les Problèmes
 
 ### Backend ne démarre pas
 ```bash
@@ -125,7 +125,7 @@ python manage.py migrate
 python manage.py create_initial_admin
 
 # Redémarrer
-python manage.py runserver 0.0.0.0:8001
+python manage.py runserver 0.0.0.0:8000
 ```
 
 ### Frontend ne compile pas
@@ -154,7 +154,7 @@ lsof -i :8001
 
 ---
 
-## 🎓 Documentation Complète
+## Documentation Complète
 
 Pour plus de détails, voir:
 
@@ -166,7 +166,7 @@ Pour plus de détails, voir:
 
 ---
 
-## ✅ Checklist de Démarrage
+## Checklist de Démarrage
 
 - [ ] Backend Django démarre sur 8001
 - [ ] Admin initial créé (bigglazer@gmail.com/pass1234)
@@ -178,15 +178,15 @@ Pour plus de détails, voir:
 
 ---
 
-## 🎉 Vous êtes Prêt!
+## Vous êtes Prêt!
 
 L'application est **100% fonctionnelle** et prête:
 
-- ✅ Pour tester les scénarios complets
-- ✅ Pour développement additionnel
-- ✅ Pour déploiement production
+- Pour tester les scénarios complets
+- Pour développement additionnel
+- Pour déploiement production
 
-**Happy coding!** 🚀
+**Happy coding!** 
 
 ---
 

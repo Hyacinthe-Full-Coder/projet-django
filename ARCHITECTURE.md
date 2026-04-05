@@ -1,6 +1,6 @@
-# 📋 Flux Application - Vue d'Ensemble Visuelle
+# Flux Application - Vue d'Ensemble Visuelle
 
-## 🔄 User Journey Par Rôle
+## User Journey Par Rôle
 
 ### ADMIN Journey
 ```
@@ -146,7 +146,7 @@ Actions Disponibles:
 
 ---
 
-## 🔐 Authentication Flow
+## Authentication Flow
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -218,7 +218,7 @@ Logout:
 
 ---
 
-## 🛣️ Navigation Map
+## Navigation Map
 
 ```
                     ┌─────────────────┐
@@ -285,7 +285,7 @@ Logout:
 
 ---
 
-## 📡 API Call Sequence Map
+## API Call Sequence Map
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -381,7 +381,7 @@ ERROR HANDLING:
 
 ---
 
-## 💾 Data Storage
+## Data Storage
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -438,7 +438,7 @@ ERROR HANDLING:
 
 ---
 
-## 🎨 UI Component Hierarchy
+## UI Component Hierarchy
 
 ```
 MaterialApp
@@ -508,6 +508,3 @@ MaterialApp
 ```
 
 ---
-
-**Generated**: Implementation Summary  
-**Status**: ✅ Complete & Ready for Testing

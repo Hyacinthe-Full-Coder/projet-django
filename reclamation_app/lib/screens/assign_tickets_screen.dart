@@ -1,0 +1,208 @@
+import 'package:flutter/material.dart';
+import '../services/ticket_service.dart';
+import '../services/auth_service.dart';
+import '../models/ticket.dart';
+
+class AssignTicketsScreen extends StatefulWidget {
+  const AssignTicketsScreen({super.key});
+
+  @override
+  State<AssignTicketsScreen> createState() => _AssignTicketsScreenState();
+}
+
+class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
+  final TicketService _ticketService = TicketService();
+  final AuthService _authService = AuthService();
+
+  List<Ticket> _tickets = [];
+  List<Map<String, dynamic>> _techniciens = [];
+  bool _isLoading = true;
+  String? _selectedFilter = 'non_assignes'; // 'non_assignes' ou 'tous'
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final tickets = await _ticketService.listerTickets();
+      final techniciens = await _ticketService.listerTechniciens();
+
+      setState(() {
+        _tickets = tickets;
+        _techniciens = techniciens;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  List<Ticket> get _filteredTickets {
+    if (_selectedFilter == 'non_assignes') {
+      return _tickets.where((t) => t.assigneA == null).toList();
+    }
+    return _tickets;
+  }
+
+  Future<void> _assignTicket(Ticket ticket, {int? technicienId, bool auto = false}) async {
+    try {
+      await _ticketService.assignerTicket(ticket.id, technicienId: technicienId, auto: auto);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket assigné avec succès')),
+        );
+        _loadData(); // Recharger les données
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'assignation: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _showAssignDialog(Ticket ticket) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Assigner le ticket #${ticket.id}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Titre: ${ticket.titre}'),
+            const SizedBox(height: 16),
+            const Text('Choisir un technicien:'),
+            const SizedBox(height: 8),
+            ..._techniciens.map((tech) => ListTile(
+              title: Text('${tech['first_name']} ${tech['last_name']}'),
+              subtitle: Text(tech['email']),
+              onTap: () {
+                Navigator.of(context).pop();
+                _assignTicket(ticket, technicienId: tech['id']);
+              },
+            )),
+            const Divider(),
+            ListTile(
+              title: const Text('Assignation automatique'),
+              subtitle: const Text('Au technicien avec le moins de tickets'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _assignTicket(ticket, auto: true);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Assigner les Tickets'),
+        backgroundColor: const Color(0xFF006743),
+        foregroundColor: Colors.white,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: Column(
+                children: [
+                  // Filtres
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.grey.shade100,
+                    child: Row(
+                      children: [
+                        const Text('Filtrer: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 16),
+                        FilterChip(
+                          label: const Text('Non assignés'),
+                          selected: _selectedFilter == 'non_assignes',
+                          onSelected: (selected) {
+                            if (selected) setState(() => _selectedFilter = 'non_assignes');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Tous les tickets'),
+                          selected: _selectedFilter == 'tous',
+                          onSelected: (selected) {
+                            if (selected) setState(() => _selectedFilter = 'tous');
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Liste des tickets
+                  Expanded(
+                    child: _filteredTickets.isEmpty
+                        ? Center(
+                            child: Text(
+                              _selectedFilter == 'non_assignes'
+                                  ? 'Aucun ticket non assigné'
+                                  : 'Aucun ticket disponible',
+                              style: const TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _filteredTickets.length,
+                            itemBuilder: (context, index) {
+                              final ticket = _filteredTickets[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: ListTile(
+                                  title: Text(
+                                    ticket.titre,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Type: ${ticket.type} • Priorité: ${ticket.priorite}'),
+                                      Text('Statut: ${ticket.status}'),
+                                      Text('Auteur: ${ticket.auteurNom}'),
+                                      if (ticket.assigneA != null)
+                                        Text('Assigné à: ${ticket.assigneA}', style: const TextStyle(color: Colors.green)),
+                                    ],
+                                  ),
+                                  trailing: ticket.assigneA == null
+                                      ? ElevatedButton(
+                                          onPressed: () => _showAssignDialog(ticket),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF006743),
+                                          ),
+                                          child: const Text('Assigner'),
+                                        )
+                                      : const Icon(Icons.check_circle, color: Colors.green),
+                                  onTap: () => _showAssignDialog(ticket),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}

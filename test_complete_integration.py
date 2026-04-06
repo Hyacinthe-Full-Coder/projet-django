@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🧪 TEST COMPLET D'INTÉGRATION - Gestion des Réclamations
-Valide tous les scénarios utilisant directement les APIs
+TEST COMPLET D'INTEGRATION - Gestion des Reclamations
+Valide tous les scenarios utilisant directement les APIs
 """
 
 print("SCRIPT STARTING - UNIQUE MARKER")
@@ -20,7 +20,7 @@ class APITester:
         self.test_results = []
         
     def _request(self, method, endpoint, data=None, token=None, expect_status=200):
-        """Helper pour faire une requête HTTP"""
+        """Helper pour faire une requete HTTP"""
         conn = http.client.HTTPConnection(self.host, self.port, timeout=10)
         headers = {"Content-Type": "application/json"}
         
@@ -51,8 +51,8 @@ class APITester:
             conn.close()
     
     def log_test(self, name, result, details="", error_details=None):
-        """Enregistrer le résultat d'un test"""
-        status = "✅ PASS" if result else "❌ FAIL"
+        """Enregistrer le resultat d'un test"""
+        status = "PASS" if result else "FAIL"
         self.test_results.append((name, result, details))
         print(f"{status} | {name}")
         if details:
@@ -62,24 +62,24 @@ class APITester:
         sys.stdout.flush()
     
     def print_summary(self):
-        """Afficher le résumé des tests"""
+        """Afficher le resume des tests"""
         print("\n" + "="*70)
         passed = sum(1 for _, r, _ in self.test_results if r)
         total = len(self.test_results)
-        print(f"📊 RÉSUMÉ: {passed}/{total} tests passants")
+        print(f"RESUME: {passed}/{total} tests passants")
         print("="*70 + "\n")
         
         if passed == total:
-            print("✨ TOUS LES TESTS RÉUSSIS - APPLICATION 100% FONCTIONNELLE ✨")
+            print("TOUS LES TESTS REUSSIS - APPLICATION 100% FONCTIONNELLE")
         else:
-            print("⚠️ Certains tests ont échoué - voir détails ci-dessus")
+            print("Certains tests ont echoue - voir details ci-dessus")
         print("="*70)
     
-    # ==================== SCÉNARIOS DE TEST ====================
+    # ==================== SCENARIOS DE TEST ====================
     
     def test_admin_login(self):
-        """SCÉNARIO 1: Admin login avec identifiants système"""
-        print("\n[SCÉNARIO 1] 👤 ADMIN LOGIN")
+        """SCENARIO 1: Admin login avec identifiants systeme"""
+        print("\n[SCENARIO 1] ADMIN LOGIN")
         print("-" * 50)
         
         result = self._request(
@@ -103,12 +103,12 @@ class APITester:
         )
     
     def test_admin_profile(self):
-        """Vérifier le profil admin"""
+        """Verifier le profil admin"""
         if "admin" not in self.tokens:
-            print("⏭️  Skipping - no admin token")
+            print("Skipping - no admin token")
             return
         
-        print("\n[SCÉNARIO 1] 📋 GET ADMIN PROFILE")
+        print("\n[SCENARIO 1] GET ADMIN PROFILE")
         result = self._request(
             "GET", "/api/auth/profile/",
             token=self.tokens["admin"],
@@ -126,12 +126,12 @@ class APITester:
         )
     
     def test_admin_dashboard_stats(self):
-        """Vérifier les statistiques du dashboard admin"""
+        """Verifier les statistiques du dashboard admin"""
         if "admin" not in self.tokens:
-            print("⏭️  Skipping - no admin token")
+            print("Skipping - no admin token")
             return
         
-        print("\n[SCÉNARIO 1] 📊 GET DASHBOARD STATS")
+        print("\n[SCENARIO 1] GET DASHBOARD STATS")
         result = self._request(
             "GET", "/api/tickets/dashboard/",
             token=self.tokens["admin"],
@@ -150,8 +150,8 @@ class APITester:
         self.log_test("Dashboard stats", passed)
     
     def test_citoyen_registration(self):
-        """SCÉNARIO 2: Citoyen s'inscrit"""
-        print("\n[SCÉNARIO 2] 👤 CITOYEN REGISTRATION")
+        """SCENARIO 2: Citoyen s'inscrit"""
+        print("\n[SCENARIO 2] CITOYEN REGISTRATION")
         print("-" * 50)
         
         timestamp = int(time.time())
@@ -194,10 +194,10 @@ class APITester:
     def test_citoyen_login(self):
         """Citoyen login avec nouvelles credentials"""
         if "citoyen_email" not in self.tokens:
-            print("⏭️  Skipping - no citoyen registered")
+            print("Skipping - no citoyen registered")
             return
         
-        print("\n[SCÉNARIO 2] 🔓 CITOYEN LOGIN")
+        print("\n[SCENARIO 2] CITOYEN LOGIN")
         result = self._request(
             "POST", "/api/auth/login/",
             {
@@ -215,12 +215,12 @@ class APITester:
         self.log_test("Citoyen login", passed)
     
     def test_citoyen_profile(self):
-        """Vérifier profil citoyen"""
+        """Verifier profil citoyen"""
         if "citoyen" not in self.tokens:
-            print("⏭️  Skipping - no citoyen token")
+            print("Skipping - no citoyen token")
             return
         
-        print("\n[SCÉNARIO 2] 📋 GET CITOYEN PROFILE")
+        print("\n[SCENARIO 2] GET CITOYEN PROFILE")
         result = self._request(
             "GET", "/api/auth/profile/",
             token=self.tokens["citoyen"],
@@ -233,12 +233,12 @@ class APITester:
         self.log_test("Citoyen profile role", passed, f"Role: {result['data'].get('role')}")
     
     def test_create_ticket(self):
-        """Citoyen crée un ticket"""
+        """Citoyen cree un ticket"""
         if "citoyen" not in self.tokens:
-            print("⏭️  Skipping - no citoyen token")
+            print("Skipping - no citoyen token")
             return
         
-        print("\n[SCÉNARIO 2] 🎫 CREATE TICKET (CITOYEN)")
+        print("\n[SCENARIO 2] CREATE TICKET (CITOYEN)")
         
         ticket_data = {
             "title": "Panne d'eau dans le quartier",
@@ -268,12 +268,12 @@ class APITester:
         )
     
     def test_create_technicien(self):
-        """SCÉNARIO 3: Admin crée un technicien"""
+        """SCENARIO 3: Admin cree un technicien"""
         if "admin" not in self.tokens:
-            print("⏭️  Skipping - no admin token")
+            print("Skipping - no admin token")
             return
         
-        print("\n[SCÉNARIO 3] 👷 CREATE TECHNICIEN (ADMIN)")
+        print("\n[SCENARIO 3] CREATE TECHNICIEN (ADMIN)")
         print("-" * 50)
         
         timestamp = int(time.time())
@@ -310,10 +310,10 @@ class APITester:
     def test_technicien_login(self):
         """Technicien login"""
         if "technicien_email" not in self.tokens:
-            print("⏭️  Skipping - no technicien created")
+            print("Skipping - no technicien created")
             return
         
-        print("\n[SCÉNARIO 3] 🔓 TECHNICIEN LOGIN")
+        print("\n[SCENARIO 3] TECHNICIEN LOGIN")
         result = self._request(
             "POST", "/api/auth/login/",
             {
@@ -334,10 +334,10 @@ class APITester:
         """Technicien voit son dashboard"""
         print("UNIQUE DEBUG: Technician dashboard test starting")
         if "technicien" not in self.tokens:
-            print("⏭️  Skipping - no technicien token")
+            print("Skipping - no technicien token")
             return
         
-        print("\n[SCÉNARIO 3] 📊 TECHNICIEN DASHBOARD STATS")
+        print("\n[SCENARIO 3] TECHNICIEN DASHBOARD STATS")
         result = self._request(
             "GET", "/api/tickets/dashboard/",
             token=self.tokens["technicien"],
@@ -350,18 +350,18 @@ class APITester:
         passed = result["success"]
         
         if passed:
-            print(f"         Total Tickets Assignés: {result['data'].get('total_tickets_assignes')}")
+            print(f"         Total Tickets Assignes: {result['data'].get('total_tickets_assignes')}")
             print(f"         My Tickets: {result['data'].get('my_tickets')}")
         
         self.log_test("Technicien dashboard", passed)
     
     def test_technicien_cannot_create_user(self):
-        """Technicien ne peut pas créer d'utilisateur"""
+        """Technicien ne peut pas creer d'utilisateur"""
         if "technicien" not in self.tokens:
-            print("⏭️  Skipping - no technicien token")
+            print("Skipping - no technicien token")
             return
         
-        print("\n[SCÉNARIO 3] 🔒 TECHNICIEN CANNOT CREATE USER (Permission Check)")
+        print("\n[SCENARIO 3] TECHNICIEN CANNOT CREATE USER (Permission Check)")
         
         user_data = {
             "email": "fake@test.com",
@@ -389,7 +389,7 @@ class APITester:
     
     def test_invalid_login(self):
         """Test avec mauvaises credentials"""
-        print("\n[EDGE CASES] ❌ INVALID LOGIN ATTEMPT")
+        print("\n[EDGE CASES] INVALID LOGIN ATTEMPT")
         print("-" * 50)
         
         result = self._request(
@@ -403,7 +403,7 @@ class APITester:
     
     def test_unauthorized_access(self):
         """Test endpoint sans token"""
-        print("\n[EDGE CASES] 🔐 UNAUTHORIZED ACCESS")
+        print("\n[EDGE CASES] UNAUTHORIZED ACCESS")
         
         result = self._request(
             "GET", "/api/auth/profile/",
@@ -415,8 +415,8 @@ class APITester:
         self.log_test("No token returns 401", passed)
     
     def test_api_endpoints_available(self):
-        """Vérifier que les endpoints existent"""
-        print("\n[SMOKE TEST] 🔍 API ENDPOINTS AVAILABLE")
+        """Verifier que les endpoints existent"""
+        print("\n[SMOKE TEST] API ENDPOINTS AVAILABLE")
         
         endpoints = [
             ("POST", "/api/auth/login/", 405),  # GET not allowed
@@ -447,26 +447,26 @@ class APITester:
                 conn.close()
     
     def run_all_tests(self):
-        """Exécuter tous les tests"""
+        """Executer tous les tests"""
         print("\n" + "="*70)
-        print("🧪 VALIDATION COMPLÈTE - GESTION DES RÉCLAMATIONS")
+        print("VALIDATION COMPLETE - GESTION DES RECLAMATIONS")
         print("="*70)
         
         # Smoke tests
         self.test_api_endpoints_available()
         
-        # Scénario 1: Admin
+        # Scenario 1: Admin
         self.test_admin_login()
         self.test_admin_profile()
         self.test_admin_dashboard_stats()
         
-        # Scénario 2: Citoyen
+        # Scenario 2: Citoyen
         self.test_citoyen_registration()
         self.test_citoyen_login()
         self.test_citoyen_profile()
         self.test_create_ticket()
         
-        # Scénario 3: Technicien
+        # Scenario 3: Technicien
         self.test_create_technicien()
         self.test_technicien_login()
         self.test_technicien_dashboard()

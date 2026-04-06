@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../screens/login_screen.dart';
 import '../services/auth_service.dart';
 
+// MISE EN PAGE AVEC BARRE LATÉRALE DE NAVIGATION (NavigationRail)
+// Alternative à AppDrawer pour les écrans larges (tablettes, desktop)
 class SidebarLayout extends StatelessWidget {
   final String role;
   final String name;
@@ -18,6 +20,7 @@ class SidebarLayout extends StatelessWidget {
     required this.body,
   });
 
+  // DÉCONNEXION
   Future<void> _logout(BuildContext context) async {
     await AuthService().logout();
     if (!context.mounted) return;
@@ -28,6 +31,7 @@ class SidebarLayout extends StatelessWidget {
     );
   }
 
+  // CONSTRUCTION DES DESTINATIONS DE NAVIGATION SELON LE RÔLE
   List<NavigationRailDestination> _getDestinations() {
     final destinations = [
       const NavigationRailDestination(
@@ -44,6 +48,7 @@ class SidebarLayout extends StatelessWidget {
       ),
     ];
 
+    // ADMIN : AJOUT DE L'ASSIGNATION DES TICKETS
     if (role == 'ADMIN') {
       destinations.insert(
         2,
@@ -57,9 +62,11 @@ class SidebarLayout extends StatelessWidget {
     return destinations;
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: Text('$role • $name'),
         backgroundColor: const Color(0xFF006743),
@@ -72,9 +79,11 @@ class SidebarLayout extends StatelessWidget {
           ),
         ],
       ),
+      
+      // CORPS PRINCIPAL (BARRE LATÉRALE + CONTENU)
       body: Row(
         children: [
-          // Sidebar navigation (fixed)
+          // BARRE DE NAVIGATION LATÉRALE
           NavigationRail(
             selectedIndex: selectedIndex,
             onDestinationSelected: onIndexChanged,
@@ -87,7 +96,8 @@ class SidebarLayout extends StatelessWidget {
             unselectedLabelTextStyle: const TextStyle(color: Colors.white70),
             destinations: _getDestinations(),
           ),
-          // Body content
+          
+          // CONTENU PRINCIPAL
           Expanded(child: body),
         ],
       ),

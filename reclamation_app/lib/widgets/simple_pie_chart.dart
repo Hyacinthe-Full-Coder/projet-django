@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+// MODÈLE DE DONNÉES POUR LE GRAPHIQUE
 class PieChartData {
   final String label;
   final int value;
@@ -13,6 +14,8 @@ class PieChartData {
   });
 }
 
+// GRAPHIQUE CAMEMBERT (TYPE DONUT)
+// Affiche la distribution des données sous forme de camembert
 class SimplePieChart extends StatelessWidget {
   final List<PieChartData> data;
   final String title;
@@ -27,6 +30,7 @@ class SimplePieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // CALCUL DU TOTAL
     final total = data.fold<int>(0, (sum, item) => sum + item.value);
 
     return Card(
@@ -37,11 +41,14 @@ class SimplePieChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // TITRE
             Text(
               title,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
+
+            // CAS : AUCUNE DONNÉE
             if (total == 0)
               Center(
                 child: SizedBox(
@@ -55,11 +62,14 @@ class SimplePieChart extends StatelessWidget {
             else
               Column(
                 children: [
+                  // GRAPHIQUE CAMEMBERT
                   CustomPaint(
                     size: Size(size, size),
                     painter: PieChartPainter(data: data, total: total),
                   ),
                   const SizedBox(height: 16),
+
+                  // LÉGENDE (étiquettes avec pourcentages)
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
@@ -91,6 +101,7 @@ class SimplePieChart extends StatelessWidget {
   }
 }
 
+// PEINTRE PERSONNALISÉ POUR DESSINER LE GRAPHIQUE
 class PieChartPainter extends CustomPainter {
   final List<PieChartData> data;
   final int total;
@@ -102,8 +113,9 @@ class PieChartPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
 
-    double currentAngle = -math.pi / 2;
+    double currentAngle = -math.pi / 2;  // Départ à 12h
 
+    // DESSIN DE CHAQUE SECTEUR
     for (final item in data) {
       final sweepAngle = (item.value / total) * 2 * math.pi;
 
@@ -115,14 +127,14 @@ class PieChartPainter extends CustomPainter {
         Rect.fromCircle(center: center, radius: radius),
         currentAngle,
         sweepAngle,
-        true,
+        true,  // Use center
         paint,
       );
 
       currentAngle += sweepAngle;
     }
 
-    // Dessiner un cercle blanc au center pour l'effet donut
+    // EFFET DONUT : cercle blanc au centre
     final centerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
@@ -130,6 +142,7 @@ class PieChartPainter extends CustomPainter {
     canvas.drawCircle(center, radius * 0.4, centerPaint);
   }
 
+  // VÉRIFICATION SI REPEINT NÉCESSAIRE
   @override
   bool shouldRepaint(PieChartPainter oldDelegate) {
     return oldDelegate.data != data;

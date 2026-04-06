@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
+// ÉCRAN DE CONNEXION
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
   @override
@@ -10,30 +11,41 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  
+  // CONTRÔLEURS DE FORMULAIRE
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _authService = AuthService();
+  
+  // ÉTATS DE L'INTERFACE
   bool _loading = false;
   bool _obscurePassword = true;
   String? _erreur;
 
+  // FONCTION DE CONNEXION
   Future<void> _login() async {
+    // VALIDATION DES CHAMPS
     if (_emailCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) {
       setState(() => _erreur = 'Veuillez remplir tous les champs');
       return;
     }
 
+    // RÉINITIALISATION DES MESSAGES
     setState(() {
       _loading = true;
       _erreur = null;
     });
+    
     try {
+      // APPEL API DE CONNEXION
       final result = await _authService.login(
         _emailCtrl.text.trim(),
         _passwordCtrl.text,
       );
+      
       if (result['success'] == true) {
         if (!mounted) return;
+        // REDIRECTION VERS L'ACCUEIL
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -52,10 +64,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // COULEUR DE FOND VERT
       backgroundColor: const Color(0xFF006743),
+      
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -70,12 +85,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // LOGO / ICÔNE
                     const Icon(
                       Icons.support_agent,
                       size: 60,
                       color: Color(0xFF006743),
                     ),
                     const SizedBox(height: 12),
+                    
+                    // TITRE APPLICATION
                     const Text(
                       'Gestion des Réclamations',
                       style: TextStyle(
@@ -85,6 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    
+                    // SOUS-TITRE
                     const Text(
                       'Connexion',
                       style: TextStyle(
@@ -94,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Champ email
+                    // CHAMP EMAIL
                     TextField(
                       controller: _emailCtrl,
                       decoration: InputDecoration(
@@ -110,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Champ mot de passe
+                    // CHAMP MOT DE PASSE
                     TextField(
                       controller: _passwordCtrl,
                       obscureText: _obscurePassword,
@@ -136,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    // Message d'erreur
+                    // AFFICHAGE ERREUR
                     if (_erreur != null) ...[
                       const SizedBox(height: 16),
                       Container(
@@ -158,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Bouton Connexion
+                    // BOUTON CONNEXION
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -192,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Lien inscription
+                    // LIEN VERS L'INSCRIPTION
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

@@ -11,6 +11,9 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
+
+# CONFIGURATION DES VARIABLES D'ENVIRONNEMENT
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+# POINT D'ENTRÉE WSGI POUR LE SERVEUR DE PRODUCTION
 application = get_wsgi_application()

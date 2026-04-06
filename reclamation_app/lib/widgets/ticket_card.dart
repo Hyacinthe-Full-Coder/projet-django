@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 
+// CARTE D'AFFICHAGE D'UN TICKET DANS LA LISTE
 class TicketCard extends StatelessWidget {
   final Ticket ticket;
   final VoidCallback onTap;
 
   const TicketCard({super.key, required this.ticket, required this.onTap});
 
+  // COULEUR SELON LE STATUT
   Color get _statColor {
     switch (ticket.status) {
       case 'OUVERT':
@@ -22,6 +24,7 @@ class TicketCard extends StatelessWidget {
     }
   }
 
+  // COULEUR SELON LA PRIORITÉ
   Color get _priorColor {
     switch (ticket.priorite) {
       case 'BASSE':
@@ -37,6 +40,7 @@ class TicketCard extends StatelessWidget {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -51,6 +55,7 @@ class TicketCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // LIGNE SUPÉRIEURE : TITRE + BADGE STATUT
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -86,6 +91,8 @@ class TicketCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+
+              // DESCRIPTION (2 lignes max)
               Text(
                 ticket.description,
                 maxLines: 2,
@@ -93,6 +100,8 @@ class TicketCard extends StatelessWidget {
                 style: const TextStyle(color: Colors.black54, fontSize: 13),
               ),
               const SizedBox(height: 8),
+
+              // LIGNE INFÉRIEURE : PRIORITÉ + AUTEUR
               Row(
                 children: [
                   Icon(Icons.flag, size: 14, color: _priorColor),

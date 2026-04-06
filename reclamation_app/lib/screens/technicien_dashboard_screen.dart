@@ -4,6 +4,7 @@ import '../widgets/app_drawer.dart';
 import 'ticket_list_screen.dart';
 import 'login_screen.dart';
 
+// ÉCRAN TABLEAU DE BORD TECHNICIEN
 class TechnicienDashboardScreen extends StatefulWidget {
   const TechnicienDashboardScreen({super.key});
 
@@ -12,18 +13,22 @@ class TechnicienDashboardScreen extends StatefulWidget {
 }
 
 class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
+  
+  // SERVICES ET DONNÉES
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
-  int _selectedIndex = 0;
+  int _selectedIndex = 0;  // 0: Dashboard, 1: Liste des tickets
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
+  // CHARGEMENT DES DONNÉES
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -44,6 +49,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     }
   }
 
+  // DÉCONNEXION
   Future<void> _logout() async {
     await _authService.logout();
     if (!mounted) return;
@@ -53,6 +59,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -62,11 +69,14 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     }
 
     return Scaffold(
+      // MENU LATÉRAL
       drawer: AppDrawer(
         role: 'TECHNICIEN',
         name: '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
         onLogout: _logout,
       ),
+      
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Dashboard Technicien'),
         backgroundColor: const Color(0xFF006743),
@@ -78,12 +88,16 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
           ),
         ],
       ),
+      
+      // CORPS PRINCIPAL (SWITCH ENTRE VUES)
       body: _selectedIndex == 0
           ? _buildDashboardView()
           : TicketListScreen(
               role: 'TECHNICIEN',
               name: '${_userProfile?['first_name'] ?? 'Technicien'} ${_userProfile?['last_name'] ?? ''}',
             ),
+      
+      // BARRE DE NAVIGATION INFÉRIEURE
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         backgroundColor: const Color(0xFF006743),
@@ -104,6 +118,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  // VUE TABLEAU DE BORD
   Widget _buildDashboardView() {
     return RefreshIndicator(
       onRefresh: _loadData,
@@ -111,7 +126,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Bienvenue
+            // SECTION BIENVENUE
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -153,9 +168,9 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Statistiques
+            // SECTION STATISTIQUES
             if (_dashboardData != null) ...[
-              // Total tickets assignés
+              // TOTAL TICKETS ASSIGNÉS
               _buildStatCard(
                 'Tickets Assignés',
                 (_dashboardData!['total_tickets_assignes'] ?? 0).toString(),
@@ -164,7 +179,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Tickets par statut
+              // TICKETS PAR STATUT
               const Text(
                 'Mes Tickets par Statut',
                 style: TextStyle(
@@ -178,7 +193,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Tickets récents
+              // TICKETS RÉCENTS
               const Text(
                 'Tickets Récents',
                 style: TextStyle(
@@ -207,6 +222,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  // CARTE STATISTIQUE GÉNÉRIQUE
   Widget _buildStatCard(
     String title,
     String value,
@@ -226,35 +242,38 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 10,
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],        ),      ),
+          ],
+        ),
+      ),
     );
   }
 
+  // GRILLE DES STATISTIQUES PAR STATUT
   Widget _buildTicketStatsGrid(Map<String, dynamic> stats) {
     final colors = {
       'EN_COURS': Colors.blue,
@@ -280,6 +299,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  // LISTE DES TICKETS RÉCENTS
   Widget _buildRecentTickets(List<dynamic> tickets) {
     return Column(
       children: tickets.map((ticket) {
@@ -291,6 +311,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // LIGNE TITRE + STATUT
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -326,6 +347,8 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                
+                // LIGNE TYPE + PRIORITÉ
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -357,6 +380,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  // COULEUR SELON LE STATUT
   Color _getStatusColor(String status) {
     switch (status) {
       case 'OUVERT':

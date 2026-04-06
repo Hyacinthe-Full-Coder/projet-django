@@ -1,16 +1,22 @@
 class Ticket {
+  //? CHAMPS PRINCIPAUX
   final int id;
   final String titre;
   final String description;
+  
+  //? CHAMPS DE CATÉGORISATION
   final String type;
   final String status;
   final String priorite;
+  
+  //? CHAMPS RELATIONNELS (AUTEUR ET ASSIGNATION)
   final String auteurNom;
   final String dateCreation;
   final String? assigneA;
   final int? assigneAId;
   final List<dynamic> commentaires;
 
+  //? CONSTRUCTEUR
   Ticket({
     required this.id,
     required this.titre,
@@ -25,6 +31,7 @@ class Ticket {
     this.commentaires = const [],
   });
 
+  //? CONVERSION JSON → OBJET DART
   factory Ticket.fromJson(Map<String, dynamic> json) {
     final auteur = json['auteur'] as Map<String, dynamic>?;
     final assigne = json['assigne_a'] as Map<String, dynamic>?;
@@ -47,6 +54,7 @@ class Ticket {
     );
   }
 
+  //? CONVERSION OBJET DART → JSON (POUR ENVOI API)
   Map<String, dynamic> toJson() {
     return {
       'titre': titre,

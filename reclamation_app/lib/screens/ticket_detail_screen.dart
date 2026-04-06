@@ -3,6 +3,7 @@ import '../models/ticket.dart';
 import '../services/ticket_service.dart';
 import '../services/auth_service.dart';
 
+// ÉCRAN DÉTAIL D'UN TICKET
 class TicketDetailScreen extends StatefulWidget {
   final int ticketId;
   const TicketDetailScreen({super.key, required this.ticketId});
@@ -12,13 +13,18 @@ class TicketDetailScreen extends StatefulWidget {
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
+  
+  // SERVICES
   final TicketService _ticketService = TicketService();
   final AuthService _authService = AuthService();
+  
+  // DONNÉES
   late Future<Ticket> _futureTicket;
   Map<String, dynamic>? _userProfile;
   bool _isLoadingAction = false;
   List<Map<String, dynamic>> _techniciens = [];
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
@@ -27,6 +33,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     _loadTechniciens();
   }
 
+  // CHARGEMENT DU PROFIL
   Future<void> _loadUserProfile() async {
     final profile = await _authService.getUserProfile();
     setState(() {
@@ -34,6 +41,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     });
   }
 
+  // CHARGEMENT DES TECHNICIENS
   Future<void> _loadTechniciens() async {
     try {
       final techniciens = await _ticketService.listerTechniciens();
@@ -41,18 +49,17 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         _techniciens = techniciens;
       });
     } catch (e) {
-      // Silencieux pour éviter de casser l'interface
       print('Erreur chargement techniciens: $e');
     }
   }
 
+  // CHANGER LE STATUT DU TICKET
   Future<void> _changerStatut(String nouveauStatut) async {
     if (_isLoadingAction) return;
 
     setState(() => _isLoadingAction = true);
     try {
       await _ticketService.changerStatus(widget.ticketId, nouveauStatut);
-      // Recharger le ticket pour voir les changements
       setState(() {
         _futureTicket = _ticketService.getTicket(widget.ticketId);
       });
@@ -72,6 +79,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  // ASSIGNER UN TECHNICIEN
   Future<void> _assignerTicket({int? technicienId, bool auto = false}) async {
     if (_isLoadingAction) return;
 
@@ -97,6 +105,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  // AJOUTER UN COMMENTAIRE
   void _ajouterCommentaire() {
     final controllerCommentaire = TextEditingController();
     showDialog(
@@ -129,7 +138,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               setState(() => _isLoadingAction = true);
               try {
                 await _ticketService.commenter(widget.ticketId, controllerCommentaire.text);
-                // Recharger le ticket pour voir les commentaires
                 setState(() {
                   _futureTicket = _ticketService.getTicket(widget.ticketId);
                 });
@@ -155,6 +163,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
+  // DIALOGUE CHANGEMENT DE STATUT
   void _montrerDialogStatut() {
     showDialog(
       context: context,
@@ -190,6 +199,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
+  // DIALOGUE ASSIGNATION
   void _montrerDialogAssignation() {
     showDialog(
       context: context,
@@ -237,6 +247,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
+  // COULEUR SELON LE STATUT
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'OUVERT':
@@ -252,6 +263,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  // COULEUR SELON LA PRIORITÉ
   Color _getPriorityColor(String priorite) {
     switch (priorite.toUpperCase()) {
       case 'BASSE':
@@ -267,20 +279,27 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Détails du ticket'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
       ),
+      
+      // CORPS PRINCIPAL
       body: FutureBuilder<Ticket>(
         future: _futureTicket,
         builder: (context, snapshot) {
+          // ÉTAT CHARGEMENT
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
+          
+          // ÉTAT ERREUR
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -313,13 +332,15 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
             );
           }
+          
           final ticket = snapshot.data!;
+          
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Titre du ticket
+                // TITRE
                 Text(
                   ticket.titre,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -328,7 +349,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Statut et Priorité
+                // STATUT + PRIORITÉ (BADGES)
                 Row(
                   children: [
                     Container(
@@ -358,37 +379,18 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Informations principales
-                _buildInfoCard(
-                  'Type',
-                  ticket.type,
-                  Icons.category,
-                ),
+                // INFORMATIONS PRINCIPALES
+                _buildInfoCard('Type', ticket.type, Icons.category),
                 const SizedBox(height: 12),
-
-                _buildInfoCard(
-                  'Auteur',
-                  ticket.auteurNom,
-                  Icons.person,
-                ),
+                _buildInfoCard('Auteur', ticket.auteurNom, Icons.person),
                 const SizedBox(height: 12),
-
                 if (ticket.assigneA != null)
-                  _buildInfoCard(
-                    'Assigné à',
-                    ticket.assigneA!,
-                    Icons.assignment_ind,
-                  ),
+                  _buildInfoCard('Assigné à', ticket.assigneA!, Icons.assignment_ind),
                 if (ticket.assigneA != null) const SizedBox(height: 12),
-
-                _buildInfoCard(
-                  'Date de création',
-                  ticket.dateCreation,
-                  Icons.calendar_today,
-                ),
+                _buildInfoCard('Date de création', ticket.dateCreation, Icons.calendar_today),
                 const SizedBox(height: 20),
 
-                // Description
+                // DESCRIPTION
                 Text(
                   'Description',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -411,10 +413,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
                 const SizedBox(height: 24),
 
-                // Actions
+                // SECTION ACTIONS
                 if (_userProfile != null && (_userProfile!['role'] == 'TECHNICIEN' || _userProfile!['role'] == 'ADMIN')) ...[
                   Row(
                     children: [
+                      // BOUTON CHANGER STATUT
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null)) 
@@ -439,6 +442,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
+                      
+                      // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
                       if (_userProfile!['role'] == 'ADMIN')
                         Expanded(
                           child: OutlinedButton.icon(
@@ -454,6 +459,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                
+                // BOUTON COMMENTER
                 Row(
                   children: [
                     Expanded(
@@ -466,7 +473,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ],
                 ),
                 
-                // Section des commentaires
+                // SECTION COMMENTAIRES
                 if (ticket.commentaires.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Text(
@@ -526,6 +533,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
+  // CARTE D'INFORMATION GÉNÉRIQUE
   Widget _buildInfoCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),

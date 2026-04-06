@@ -7,7 +7,10 @@ from accounts.models import CustomUser
 from tickets.models import Ticket, HistoriqueStatut
 
 
+# TESTS DU WORKFLOW DES TICKETS
 class TicketWorkflowTests(APITestCase):
+    
+    # CRÉATION DES UTILISATEURS DE TEST
     def setUp(self):
         self.citoyen = CustomUser.objects.create_user(
             username='citoyen', email='citoyen@example.com', password='Test1234', role=CustomUser.Roles.CITOYEN
@@ -19,6 +22,7 @@ class TicketWorkflowTests(APITestCase):
             username='admin', email='admin@example.com', password='Test1234', role=CustomUser.Roles.ADMIN
         )
 
+    # AUTHENTIFICATION HELPER
     def authenticate(self, user):
         url = reverse('token_obtain')
         resp = self.client.post(url, {'email': user.email, 'password': 'Test1234'}, format='json')
@@ -27,6 +31,7 @@ class TicketWorkflowTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         return resp.data
 
+    # TEST 1 : VÉRIFICATION DE L'AUTHENTIFICATION REQUISE
     def test_authentication_header_required(self):
         url = reverse('ticket-list')
         resp = self.client.get(url)
@@ -36,6 +41,7 @@ class TicketWorkflowTests(APITestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
+    # TEST 2 : CRÉATION DE TICKET PAR CITOYEN
     def test_citoyen_can_create_ticket_and_author_assigned(self):
         self.authenticate(self.citoyen)
         url = reverse('ticket-list')
@@ -53,8 +59,8 @@ class TicketWorkflowTests(APITestCase):
         self.assertEqual(ticket.auteur, self.citoyen)
         self.assertEqual(ticket.statut, Ticket.Statut.OUVERT)
 
+    # TEST 3 : FILTRAGE DES TICKETS PAR STATUT
     def test_list_filter_by_statut(self):
-        # crée deux tickets
         ticket1 = Ticket.objects.create(
             titre='Ticket ouvert', description='Ouvert', type_ticket=Ticket.TypeTicket.INCIDENT,
             priorite=Ticket.Priorite.BASSE, auteur=self.citoyen, assigne_a=self.technicien, statut=Ticket.Statut.OUVERT
@@ -72,6 +78,7 @@ class TicketWorkflowTests(APITestCase):
         self.assertIn(ticket1.id, returned_ids)
         self.assertNotIn(ticket2.id, returned_ids)
 
+    # TEST 4 : CHANGEMENT DE STATUT PAR TECHNICIEN AVEC HISTORIQUE
     def test_technicien_change_status_and_history_created(self):
         ticket = Ticket.objects.create(
             titre='Ticket pour traitement', description='...', type_ticket=Ticket.TypeTicket.INCIDENT,
@@ -92,13 +99,13 @@ class TicketWorkflowTests(APITestCase):
         self.assertEqual(historique.nouveau_statut, Ticket.Statut.EN_COURS)
         self.assertEqual(historique.modifie_par, self.technicien)
 
-        # le citoyen doit voir le nouveau statut
         self.authenticate(self.citoyen)
         detail_url = reverse('ticket-detail', kwargs={'pk': ticket.id})
         resp = self.client.get(detail_url)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data['statut'], Ticket.Statut.EN_COURS)
 
+    # TEST 5 : CITOYEN NE PEUT PAS CHANGER LE STATUT
     def test_citoyen_cannot_change_status(self):
         ticket = Ticket.objects.create(
             titre='Ticket non autorisé', description='...', type_ticket=Ticket.TypeTicket.INCIDENT,
@@ -110,35 +117,34 @@ class TicketWorkflowTests(APITestCase):
         resp = self.client.patch(url, {'statut': Ticket.Statut.EN_COURS}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
+    # TEST 6 : RAFRAÎCHISSEMENT DE TOKEN JWT
     @override_settings(SIMPLE_JWT={'ACCESS_TOKEN_LIFETIME': timedelta(seconds=1), 'REFRESH_TOKEN_LIFETIME': timedelta(minutes=5), 'AUTH_HEADER_TYPES': ('Bearer',)})
     def test_refresh_token_flow(self):
-        # Connexion initiale
         url_auth = reverse('token_obtain')
         resp = self.client.post(url_auth, {'email': self.citoyen.email, 'password': 'Test1234'}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         refresh_token = resp.data['refresh']
 
-        # attendre pour dépasser la validité du token d'accès
         import time
         time.sleep(2)
 
-        # l'ancien access peut être expiré ou encore valide en fonction du temps de traitement
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {resp.data['access']}")
         resp2 = self.client.get(reverse('ticket-list'))
         self.assertIn(resp2.status_code, (status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED))
 
-        # refresh doit toujours fonctionner
         url_refresh = reverse('token_refresh')
         resp_refresh = self.client.post(url_refresh, {'refresh': refresh_token}, format='json')
         self.assertEqual(resp_refresh.status_code, status.HTTP_200_OK)
         self.assertIn('access', resp_refresh.data)
-        # nouvelle demande avec access rafraîchi
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {resp_refresh.data['access']}")
         resp3 = self.client.get(reverse('ticket-list'))
         self.assertEqual(resp3.status_code, status.HTTP_200_OK)
 
 
+# TESTS DU TABLEAU DE BORD
 class DashboardTests(APITestCase):
+    
+    # CRÉATION DES DONNÉES DE TEST
     def setUp(self):
         self.citoyen = CustomUser.objects.create_user(
             username='citoyen', email='citoyen@example.com', password='Test1234', role=CustomUser.Roles.CITOYEN
@@ -150,7 +156,6 @@ class DashboardTests(APITestCase):
             username='admin', email='admin@example.com', password='Test1234', role=CustomUser.Roles.ADMIN
         )
         
-        # Créer quelques tickets de test
         self.ticket1 = Ticket.objects.create(
             titre='Ticket 1', description='...',
             type_ticket=Ticket.TypeTicket.INCIDENT, priorite=Ticket.Priorite.BASSE,
@@ -168,6 +173,7 @@ class DashboardTests(APITestCase):
         token = resp.data['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
+    # TEST DASHBOARD ADMIN
     def test_admin_dashboard(self):
         self.authenticate(self.admin)
         url = reverse('ticket-dashboard')
@@ -183,6 +189,7 @@ class DashboardTests(APITestCase):
         self.assertIn('recent_tickets', data)
         self.assertEqual(data['total_tickets'], 2)
 
+    # TEST DASHBOARD TECHNICIEN
     def test_technicien_dashboard(self):
         self.authenticate(self.technicien)
         url = reverse('ticket-dashboard')
@@ -196,6 +203,7 @@ class DashboardTests(APITestCase):
         self.assertEqual(data['total_tickets_assignes'], 1)
         self.assertEqual(data['my_tickets']['EN_COURS'], 1)
 
+    # TEST DASHBOARD CITOYEN
     def test_citoyen_dashboard(self):
         self.authenticate(self.citoyen)
         url = reverse('ticket-dashboard')
@@ -208,7 +216,10 @@ class DashboardTests(APITestCase):
         self.assertEqual(data['total_tickets'], 2)
 
 
+# TESTS DE CRÉATION D'UTILISATEURS PAR ADMIN
 class CreateUserTests(APITestCase):
+    
+    # CRÉATION DES UTILISATEURS DE TEST
     def setUp(self):
         self.admin = CustomUser.objects.create_superuser(
             username='admin', email='admin@example.com', password='Test1234', role=CustomUser.Roles.ADMIN
@@ -223,6 +234,7 @@ class CreateUserTests(APITestCase):
         token = resp.data['access']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
+    # TEST : ADMIN PEUT CRÉER UN TECHNICIEN
     def test_admin_can_create_technicien(self):
         self.authenticate(self.admin)
         url = reverse('create_user')
@@ -239,6 +251,7 @@ class CreateUserTests(APITestCase):
         self.assertEqual(resp.data['role'], 'TECHNICIEN')
         self.assertTrue(CustomUser.objects.filter(email='newtech@example.com').exists())
 
+    # TEST : ADMIN PEUT CRÉER UN ADMIN
     def test_admin_can_create_admin(self):
         self.authenticate(self.admin)
         url = reverse('create_user')
@@ -254,6 +267,7 @@ class CreateUserTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         self.assertEqual(resp.data['role'], 'ADMIN')
 
+    # TEST : CITOYEN NE PEUT PAS CRÉER D'UTILISATEUR
     def test_citoyen_cannot_create_user(self):
         self.authenticate(self.citoyen)
         url = reverse('create_user')
@@ -267,4 +281,3 @@ class CreateUserTests(APITestCase):
         }
         resp = self.client.post(url, data, format='json')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
-

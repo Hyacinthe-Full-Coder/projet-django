@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
+// ÉCRAN DE CRÉATION D'UTILISATEUR (ADMIN)
 class CreateUserScreen extends StatefulWidget {
   const CreateUserScreen({Key? key}) : super(key: key);
 
@@ -9,6 +10,8 @@ class CreateUserScreen extends StatefulWidget {
 }
 
 class _CreateUserScreenState extends State<CreateUserScreen> {
+  
+  // CONTRÔLEURS DE FORMULAIRE
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
@@ -19,6 +22,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   final _telephoneCtrl = TextEditingController();
   final _authService = AuthService();
 
+  // ÉTATS DE L'INTERFACE
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -26,15 +30,19 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
   String? _success;
   String _selectedRole = 'TECHNICIEN';
 
+  // CRÉATION DE L'UTILISATEUR
   Future<void> _createUser() async {
+    // VALIDATION DU FORMULAIRE
     if (!_formKey.currentState!.validate()) return;
 
+    // VÉRIFICATION MOT DE PASSE
     if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
       setState(() =>
           _erreur = 'Les mots de passe ne correspondent pas');
       return;
     }
 
+    // RÉINITIALISATION DES MESSAGES
     setState(() {
       _loading = true;
       _erreur = null;
@@ -42,6 +50,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     });
 
     try {
+      // APPEL API DE CRÉATION
       final result = await _authService.createUser(
         _emailCtrl.text.trim(),
         _usernameCtrl.text.trim(),
@@ -54,7 +63,8 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
 
       if (result['success'] == true) {
         setState(() => _success = result['message']);
-        // Réinitialiser le formulaire
+        
+        // RÉINITIALISATION DU FORMULAIRE
         _formKey.currentState!.reset();
         _emailCtrl.clear();
         _usernameCtrl.clear();
@@ -81,14 +91,18 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         title: const Text('Créer Utilisateur'),
       ),
+      
+      // CORPS PRINCIPAL
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -104,6 +118,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // EN-TÊTE
                     const Icon(
                       Icons.person_add,
                       size: 50,
@@ -120,7 +135,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Sélection rôle
+                    // SECTION RÔLE
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -160,7 +175,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Email
+                    // CHAMP EMAIL
                     TextFormField(
                       controller: _emailCtrl,
                       decoration: InputDecoration(
@@ -185,7 +200,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Nom d'utilisateur
+                    // CHAMP NOM D'UTILISATEUR
                     TextFormField(
                       controller: _usernameCtrl,
                       decoration: InputDecoration(
@@ -206,7 +221,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Prénom
+                    // CHAMP PRÉNOM
                     TextFormField(
                       controller: _firstNameCtrl,
                       decoration: InputDecoration(
@@ -227,7 +242,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Nom
+                    // CHAMP NOM
                     TextFormField(
                       controller: _lastNameCtrl,
                       decoration: InputDecoration(
@@ -248,7 +263,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Téléphone
+                    // CHAMP TÉLÉPHONE (OPTIONNEL)
                     TextFormField(
                       controller: _telephoneCtrl,
                       decoration: InputDecoration(
@@ -264,7 +279,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Mot de passe
+                    // CHAMP MOT DE PASSE
                     TextFormField(
                       controller: _passwordCtrl,
                       obscureText: _obscurePassword,
@@ -300,7 +315,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Confirmer mot de passe
+                    // CHAMP CONFIRMATION MOT DE PASSE
                     TextFormField(
                       controller: _confirmPasswordCtrl,
                       obscureText: _obscureConfirm,
@@ -332,7 +347,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                       },
                     ),
 
-                    // Messages
+                    // AFFICHAGE ERREUR
                     if (_erreur != null) ...[
                       const SizedBox(height: 16),
                       Container(
@@ -354,7 +369,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Bouton Créer
+                    // BOUTON CRÉATION
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -395,6 +410,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
     );
   }
 
+  // LIBÉRATION DES CONTRÔLEURS
   @override
   void dispose() {
     _emailCtrl.dispose();

@@ -12,48 +12,55 @@ from .permissions import IsAuteurOrReadOnly, IsTechnicienOrReadOnly, IsAdminOrRe
 from accounts.models import CustomUser
 
 
+# VIEWSET PRINCIPAL DES TICKETS
 class TicketViewSet(viewsets.ModelViewSet):
+    
+    # REQUÊTE OPTIMISÉE AVEC SELECT/PRETCH
     queryset = Ticket.objects.select_related('auteur', 'assigne_a').prefetch_related('commentaires', 'historique')
+    
+    # PERMISSIONS ET FILTRES
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['statut', 'priorite', 'type_ticket', 'assigne_a__id']
     search_fields = ['titre', 'description']
     ordering_fields = ['date_creation', 'priorite', 'statut']
 
+    # SÉLECTION DU SÉRIALISEUR SELON L'ACTION
     def get_serializer_class(self):
         if self.action in ['list']:
-            return TicketListSerializer
-        return TicketSerializer
-    
+            return TicketListSerializer  # Version légère pour la liste
+        return TicketSerializer          # Version complète pour le détail
+
+    # FILTRAGE DES TICKETS SELON LE RÔLE UTILISATEUR
     def get_queryset(self):
         user = self.request.user
-        base_q = Ticket.objects.filter(est_archive=False)
-        if user.role == 'CITOYEN':
-            return base_q.filter(auteur=user)
-        elif user.role == 'TECHNICIEN':
-            # Technicien ne voit que les tickets qui lui sont assignés
-            return base_q.filter(assigne_a=user)
+        base_q = Ticket.objects.filter(est_archive=False)  # Exclut les archivés
         
-        # admin voit tous les tickets non archivés
-        return base_q
-    
+        if user.role == 'CITOYEN':
+            return base_q.filter(auteur=user)              # Citoyen : ses propres tickets
+        elif user.role == 'TECHNICIEN':
+            return base_q.filter(assigne_a=user)           # Technicien : tickets assignés
+        return base_q                                       # Admin : tous les tickets
+
+    # ACTION : CHANGER LE STATUT D'UN TICKET
     @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
     def changer_statut(self, request, pk=None):
         ticket = self.get_object()
 
-        # Seuls les techniciens assignés au ticket et les admins peuvent changer le statut
+        # VÉRIFICATION DES DROITS
         if request.user.role not in (CustomUser.Roles.TECHNICIEN, CustomUser.Roles.ADMIN):
             return Response({'detail': 'Vous n\'avez pas les droits pour changer le statut.'}, status=status.HTTP_403_FORBIDDEN)
         if request.user.role == CustomUser.Roles.TECHNICIEN and ticket.assigne_a != request.user:
             return Response({'detail': 'Technicien non assigné au ticket.'}, status=status.HTTP_403_FORBIDDEN)
 
+        # VALIDATION DU NOUVEAU STATUT
         nouveau_statut = request.data.get('statut')
         if nouveau_statut not in dict(Ticket.Statut.choices):
             return Response({'error': 'Statut invalide'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Optionnel : archive automatique si close
+        # MISE À JOUR DU TICKET
         if nouveau_statut == Ticket.Statut.CLOS:
-            ticket.est_archive = False  # close visible, archive pur plus tard (cron)
+            ticket.est_archive = False
         
         ancien_statut = ticket.statut
         ticket.statut = nouveau_statut
@@ -61,7 +68,7 @@ class TicketViewSet(viewsets.ModelViewSet):
             ticket.date_resolution = timezone.now()
         ticket.save()
 
-        # Enregistrer l'historique du changement de statut
+        # ENREGISTREMENT DE L'HISTORIQUE
         HistoriqueStatut.objects.create(
             ticket=ticket,
             ancien_statut=ancien_statut,
@@ -69,7 +76,8 @@ class TicketViewSet(viewsets.ModelViewSet):
             modifie_par=request.user
         )
         return Response(TicketSerializer(ticket, context={'request': request}).data)
-    
+
+    # ACTION : AJOUTER UN COMMENTAIRE
     @action(detail=True, methods=['post'])
     def commenter(self, request, pk=None):
         ticket = self.get_object()
@@ -79,15 +87,19 @@ class TicketViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # ACTION : ASSIGNER UN TECHNICIEN À UN TICKET
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def assigner(self, request, pk=None):
         ticket = self.get_object()
+        
+        # SEUL L'ADMIN PEUT ASSIGNER
         if request.user.role != CustomUser.Roles.ADMIN:
             return Response({'detail': 'Seul l\'admin peut assigner un ticket.'}, status=status.HTTP_403_FORBIDDEN)
 
         technicien_id = request.data.get('technicien_id')
         auto = request.data.get('auto', False)
 
+        # ASSIGNATION AUTOMATIQUE (LOAD BALANCING)
         if auto:
             technicien = CustomUser.objects.filter(role=CustomUser.Roles.TECHNICIEN).annotate(
                 nb_tickets=models.Count('tickets_assignes', filter=models.Q(tickets_assignes__statut__in=[Ticket.Statut.EN_COURS, Ticket.Statut.OUVERT]))
@@ -96,6 +108,7 @@ class TicketViewSet(viewsets.ModelViewSet):
                 return Response({'detail': 'Aucun technicien disponible.'}, status=status.HTTP_400_BAD_REQUEST)
             ticket.assigne_a = technicien
         else:
+            # ASSIGNATION MANUELLE
             if not technicien_id:
                 return Response({'error': 'technicien_id requis'}, status=status.HTTP_400_BAD_REQUEST)
             try:
@@ -107,6 +120,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket.save()
         return Response(TicketSerializer(ticket, context={'request': request}).data)
 
+    # ACTION : TABLEAU DE BORD STATISTIQUE
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def dashboard(self, request):
         """
@@ -117,8 +131,8 @@ class TicketViewSet(viewsets.ModelViewSet):
         """
         user = request.user
         
+        # DASHBOARD ADMIN
         if user.role == 'ADMIN':
-            # Admin stats
             total_tickets = Ticket.objects.count()
             tickets_ouvert = Ticket.objects.filter(statut=Ticket.Statut.OUVERT).count()
             tickets_en_cours = Ticket.objects.filter(statut=Ticket.Statut.EN_COURS).count()
@@ -148,8 +162,9 @@ class TicketViewSet(viewsets.ModelViewSet):
                     many=True
                 ).data,
             }
+        
+        # DASHBOARD TECHNICIEN
         elif user.role == 'TECHNICIEN':
-            # Technicien stats
             tickets_assignes = Ticket.objects.filter(assigne_a=user)
             total = tickets_assignes.count()
             en_cours = tickets_assignes.filter(statut=Ticket.Statut.EN_COURS).count()
@@ -170,8 +185,9 @@ class TicketViewSet(viewsets.ModelViewSet):
                     many=True
                 ).data,
             }
+        
+        # DASHBOARD CITOYEN
         else:
-            # Citoyen
             my_tickets = Ticket.objects.filter(auteur=user)
             data = {
                 'role': user.role,
@@ -192,6 +208,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Response(data)
 
 
+# VIEWSET POUR LISTER LES TECHNICIENS
 class TechnicienViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet pour lister les techniciens (utilisé par Flutter)"""
     queryset = CustomUser.objects.filter(role='TECHNICIEN')

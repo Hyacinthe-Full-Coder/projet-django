@@ -7,6 +7,7 @@ import '../widgets/notification_badge.dart';
 import 'ticket_detail_screen.dart';
 import 'create_ticket_screen.dart';
 
+// ÉCRAN DE LISTE DES TICKETS
 class TicketListScreen extends StatefulWidget {
   final String role;
   final String name;
@@ -18,16 +19,20 @@ class TicketListScreen extends StatefulWidget {
 }
 
 class _TicketListScreenState extends State<TicketListScreen> {
+  
+  // SERVICES ET DONNÉES
   final _service = TicketService();
   late Future<List<Ticket>> _futureTickets;
   String _filterStatus = 'TOUS';
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _charger();
   }
 
+  // CHARGEMENT DES TICKETS AVEC FILTRE
   void _charger() {
     setState(() {
       _futureTickets = _service.listerTickets(
@@ -36,6 +41,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
     });
   }
 
+  // COULEUR SELON LE STATUT
   Color _couleurStatus(String status) {
     switch (status) {
       case 'OUVERT':
@@ -51,19 +57,24 @@ class _TicketListScreenState extends State<TicketListScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // MENU LATÉRAL
       drawer: AppDrawer(
         role: widget.role,
         name: widget.name,
         onLogout: null,
       ),
+      
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Mes Tickets'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         actions: [
+          // BOUTON FILTRE AVEC BADGE NOTIFICATION
           NotificationBadge(
             ticketService: _service,
             child: PopupMenuButton<String>(
@@ -85,19 +96,30 @@ class _TicketListScreenState extends State<TicketListScreen> {
           ),
         ],
       ),
+      
+      // CORPS PRINCIPAL
       body: FutureBuilder<List<Ticket>>(
         future: _futureTickets,
         builder: (context, snapshot) {
+          
+          // ÉTAT CHARGEMENT
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          
+          // ÉTAT ERREUR
           if (snapshot.hasError) {
             return Center(child: Text('Erreur: ${snapshot.error}'));
           }
+          
           final tickets = snapshot.data ?? [];
+          
+          // LISTE VIDE
           if (tickets.isEmpty) {
             return const Center(child: Text('Aucun ticket trouvé'));
           }
+          
+          // LISTE DES TICKETS
           return RefreshIndicator(
             onRefresh: () async {
               _charger();
@@ -118,6 +140,8 @@ class _TicketListScreenState extends State<TicketListScreen> {
           );
         },
       ),
+      
+      // BOUTON FLOTTANT CRÉATION
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,

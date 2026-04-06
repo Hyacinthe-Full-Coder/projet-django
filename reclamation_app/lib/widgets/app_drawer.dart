@@ -9,6 +9,8 @@ import '../screens/create_user_screen.dart';
 import '../screens/statistics_screen.dart';
 import '../screens/login_screen.dart';
 
+// MENU LATÉRAL DE NAVIGATION
+// Affiche différentes options selon le rôle de l'utilisateur (ADMIN, TECHNICIEN, CITOYEN)
 class AppDrawer extends StatelessWidget {
   final String role;
   final String name;
@@ -28,6 +30,7 @@ class AppDrawer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // EN-TÊTE DU MENU (PROFIL UTILISATEUR)
             UserAccountsDrawerHeader(
               accountName: Text(name),
               accountEmail: Text(role),
@@ -37,6 +40,8 @@ class AppDrawer extends StatelessWidget {
               ),
               decoration: const BoxDecoration(color: Color(0xFF006743)),
             ),
+            
+            // SECTION ADMIN
             if (role == 'ADMIN') ...[
               ListTile(
                 leading: const Icon(Icons.dashboard),
@@ -98,7 +103,10 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
-            ] else if (role == 'TECHNICIEN') ...[
+            ] 
+            
+            // SECTION TECHNICIEN
+            else if (role == 'TECHNICIEN') ...[
               ListTile(
                 leading: const Icon(Icons.dashboard),
                 title: const Text('Dashboard'),
@@ -137,7 +145,10 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
-            ] else ...[
+            ] 
+            
+            // SECTION CITOYEN
+            else ...[
               ListTile(
                 leading: const Icon(Icons.add),
                 title: const Text('Créer un ticket'),
@@ -166,8 +177,11 @@ class AppDrawer extends StatelessWidget {
                 },
               ),
             ],
+            
             const Spacer(),
             const Divider(),
+            
+            // BOUTON DÉCONNEXION
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Déconnexion'),

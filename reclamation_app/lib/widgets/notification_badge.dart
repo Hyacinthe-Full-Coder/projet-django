@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/ticket_service.dart';
 
+// BADGE DE NOTIFICATION POUR TICKETS OUVERTS
+// Affiche un indicateur rouge avec le nombre de tickets ouverts non lus
 class NotificationBadge extends StatefulWidget {
-  final Widget child;
-  final TicketService ticketService;
+  final Widget child;           // Widget enfant (bouton filtre)
+  final TicketService ticketService;  // Service pour récupérer les tickets
 
   const NotificationBadge({
     super.key,
@@ -18,30 +20,36 @@ class NotificationBadge extends StatefulWidget {
 class _NotificationBadgeState extends State<NotificationBadge> {
   int _unreadCount = 0;
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _checkUnreadTickets();
   }
 
+  // VÉRIFICATION DES TICKETS OUVERTS
   Future<void> _checkUnreadTickets() async {
     try {
       final tickets = await widget.ticketService.listerTickets(statut: 'OUVERT');
-      // Pour cet exemple, on considère tous les tickets ouverts comme non lus
-      // Dans un vrai système, il faudrait stocker la date de dernière lecture
+      // Note : les tickets ouverts sont considérés comme non lus
+      // Dans une version réelle, il faudrait comparer avec la date de dernière lecture
       setState(() {
         _unreadCount = tickets.length;
       });
     } catch (e) {
-      // Silencieux
+      // Erreur silencieuse pour ne pas casser l'interface
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // WIDGET ENFANT (icône filtre)
         widget.child,
+        
+        // BADGE DE NOTIFICATION (si > 0)
         if (_unreadCount > 0)
           Positioned(
             right: 0,

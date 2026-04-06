@@ -3,16 +3,22 @@
 from django.db import migrations, models
 
 
+# MIGRATION D'AJOUT DE CHAMP ARCHIVAGE
 class Migration(migrations.Migration):
 
+    # DÉPENDANCES DE LA MIGRATION
     dependencies = [
-        ('tickets', '0001_initial'),
+        ('tickets', '0001_initial'),  # Dépend de la migration initiale
     ]
 
+    # OPÉRATIONS À EXÉCUTER
     operations = [
+        # AJOUT D'UN CHAMP BOOLÉEN
         migrations.AddField(
-            model_name='ticket',
-            name='est_archive',
-            field=models.BooleanField(default=False),
+            model_name='ticket',           # Modèle cible
+            name='est_archive',            # Nom du champ
+            field=models.BooleanField(     # Type : booléen
+                default=False              # Valeur par défaut : non archivé
+            ),
         ),
     ]

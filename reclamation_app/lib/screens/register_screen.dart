@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
+// ÉCRAN D'INSCRIPTION (CITOYEN)
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
 
@@ -10,6 +11,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  
+  // CONTRÔLEURS DE FORMULAIRE
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
@@ -20,21 +23,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _telephoneCtrl = TextEditingController();
   final _authService = AuthService();
 
+  // ÉTATS DE L'INTERFACE
   bool _loading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String? _erreur;
   String? _success;
 
+  // FONCTION D'INSCRIPTION
   Future<void> _register() async {
+    // VALIDATION DU FORMULAIRE
     if (!_formKey.currentState!.validate()) return;
 
+    // VÉRIFICATION MOT DE PASSE
     if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
       setState(() =>
           _erreur = 'Les mots de passe ne correspondent pas');
       return;
     }
 
+    // RÉINITIALISATION DES MESSAGES
     setState(() {
       _loading = true;
       _erreur = null;
@@ -42,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
+      // APPEL API D'INSCRIPTION
       final result = await _authService.register(
         _emailCtrl.text.trim(),
         _usernameCtrl.text.trim(),
@@ -55,6 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() => _success = result['message']);
         await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
+        // REDIRECTION VERS LA PAGE DE CONNEXION
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -69,15 +79,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // COULEUR DE FOND VERT
       backgroundColor: const Color(0xFF006743),
+      
+      // BARRE D'APPLICATION
       appBar: AppBar(
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         title: const Text('Inscription'),
       ),
+      
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -94,6 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // EN-TÊTE
                       const Icon(
                         Icons.person_add,
                         size: 50,
@@ -118,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Email
+                      // CHAMP EMAIL
                       TextFormField(
                         controller: _emailCtrl,
                         decoration: InputDecoration(
@@ -143,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Nom d'utilisateur
+                      // CHAMP NOM D'UTILISATEUR
                       TextFormField(
                         controller: _usernameCtrl,
                         decoration: InputDecoration(
@@ -164,7 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Prénom
+                      // CHAMP PRÉNOM
                       TextFormField(
                         controller: _firstNameCtrl,
                         decoration: InputDecoration(
@@ -185,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Nom
+                      // CHAMP NOM
                       TextFormField(
                         controller: _lastNameCtrl,
                         decoration: InputDecoration(
@@ -206,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Téléphone
+                      // CHAMP TÉLÉPHONE (OPTIONNEL)
                       TextFormField(
                         controller: _telephoneCtrl,
                         decoration: InputDecoration(
@@ -222,7 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Mot de passe
+                      // CHAMP MOT DE PASSE
                       TextFormField(
                         controller: _passwordCtrl,
                         obscureText: _obscurePassword,
@@ -258,7 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Confirmer mot de passe
+                      // CHAMP CONFIRMATION MOT DE PASSE
                       TextFormField(
                         controller: _confirmPasswordCtrl,
                         obscureText: _obscureConfirm,
@@ -290,7 +306,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
 
-                      // Messages
+                      // AFFICHAGE ERREUR
                       if (_erreur != null) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -310,6 +326,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ],
 
+                      // AFFICHAGE SUCCÈS
                       if (_success != null) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -331,7 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Bouton Inscription
+                      // BOUTON INSCRIPTION
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -366,7 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Lien connexion
+                      // LIEN VERS LA CONNEXION
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -396,6 +413,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // LIBÉRATION DES CONTRÔLEURS
   @override
   void dispose() {
     _emailCtrl.dispose();

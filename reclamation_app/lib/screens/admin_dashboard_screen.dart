@@ -6,6 +6,7 @@ import 'create_user_screen.dart';
 import 'login_screen.dart';
 import 'assign_tickets_screen.dart';
 
+// ÉCRAN TABLEAU DE BORD ADMINISTRATEUR
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
@@ -14,17 +15,21 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  
+  // SERVICES ET DONNÉES
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
+  // CHARGEMENT DES DONNÉES (PROFIL + DASHBOARD)
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -43,6 +48,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  // DÉCONNEXION
   Future<void> _logout() async {
     await _authService.logout();
     if (!mounted) return;
@@ -52,9 +58,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
-    // Vérifier si l'utilisateur est admin
+    
+    // VÉRIFICATION DES DROITS ADMIN
     if (_userProfile == null || _userProfile!['role'] != 'ADMIN') {
       return Scaffold(
         appBar: AppBar(
@@ -72,12 +80,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
 
+    // INTERFACE PRINCIPALE
     return Scaffold(
+      // MENU LATÉRAL
       drawer: AppDrawer(
         role: 'ADMIN',
         name: '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
         onLogout: _logout,
       ),
+      
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Dashboard Admin'),
         backgroundColor: const Color(0xFF006743),
@@ -89,6 +101,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
+      
+      // CORPS PRINCIPAL
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
@@ -96,146 +110,139 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Bienvenue
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF006743),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.admin_panel_settings,
-                            color: Colors.white,
-                            size: 40,
+                  child: Column(
+                    children: [
+                      // SECTION BIENVENUE
+                      _buildWelcomeCard(),
+                      const SizedBox(height: 24),
+
+                      // SECTION STATISTIQUES PRINCIPALES
+                        if (_dashboardData != null) ...[
+                          _buildStatCard(
+                            'Total Tickets',
+                            _dashboardData!['total_tickets'].toString(),
+                            Icons.receipt_outlined,
+                            Colors.blue,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Bienvenue Administrateur',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 16),
+
+                          // SECTION STATISTIQUES PAR STATUT
+                          const Text(
+                            'Tickets par Statut',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                          const SizedBox(height: 12),
+                          _buildTicketStatsGrid(
+                              _dashboardData!['tickets_by_status']),
+                          const SizedBox(height: 24),
 
-                    // Statistiques principales
-                    if (_dashboardData != null) ...[
-                      // Total tickets
-                      _buildStatCard(
-                        'Total Tickets',
-                        _dashboardData!['total_tickets'].toString(),
-                        Icons.receipt_outlined,
-                        Colors.blue,
+                          // SECTION UTILISATEURS
+                          const Text(
+                            'Utilisateurs du Système',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildUserStatsGrid(_dashboardData!['users_by_role']),
+                          const SizedBox(height: 24),
+                        ],
+
+                      // SECTION ACTIONS ADMIN
+                      const Text(
+                        'Actions Administrateur',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildAdminCard(
+                        'Assigner Tickets',
+                        'Gérer l\'assignation des tickets aux techniciens',
+                        Icons.assignment,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AssignTicketsScreen(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
-
-                      // Tickets par statut
-                      const Text(
-                        'Tickets par Statut',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      _buildAdminCard(
+                        'Créer Utilisateur',
+                        'Ajouter un admin ou technicien',
+                        Icons.person_add,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CreateUserScreen(),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 12),
-                      _buildTicketStatsGrid(
-                          _dashboardData!['tickets_by_status']),
-                      const SizedBox(height: 24),
-
-                      // Utilisateurs
-                      const Text(
-                        'Utilisateurs du Système',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildUserStatsGrid(_dashboardData!['users_by_role']),
+                      const SizedBox(height: 16),
+                      const Text('test'),
                       const SizedBox(height: 24),
                     ],
-
-                    // Actions
-                    const Text(
-                      'Actions Administrateur',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildAdminCard(
-                      'Assigner Tickets',
-                      'Gérer l\'assignation des tickets aux techniciens',
-                      Icons.assignment,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AssignTicketsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAdminCard(
-                      'Créer Utilisateur',
-                      'Ajouter un admin ou technicien',
-                      Icons.person_add,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CreateUserScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAdminCard(
-                      'Statistiques Détaillées',
-                      'Voir tous les détails et graphiques',
-                      Icons.bar_chart,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const StatisticsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
         );
   }
 
+  // CARTE DE BIENVENUE
+  Widget _buildWelcomeCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF006743),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.admin_panel_settings,
+            color: Colors.white,
+            size: 40,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Bienvenue Administrateur',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CARTE STATISTIQUE GÉNÉRIQUE
   Widget _buildStatCard(
     String title,
     String value,
@@ -251,9 +258,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -281,8 +288,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
-  );
-}
+    );
+  }
+
+  // GRILLE DES STATISTIQUES DES TICKETS
   Widget _buildTicketStatsGrid(Map<String, dynamic> stats) {
     final colors = {
       'OUVERT': Colors.orange,
@@ -309,6 +318,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // GRILLE DES STATISTIQUES DES UTILISATEURS
   Widget _buildUserStatsGrid(Map<String, dynamic> stats) {
     final colors = {
       'ADMIN': Colors.red,
@@ -334,6 +344,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // CARTE D'ACTION ADMIN
   Widget _buildAdminCard(
     String title,
     String description,

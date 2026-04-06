@@ -7,10 +7,14 @@ For more information on this file, see
 https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
 """
 
+# ASGI config for config project.
 import os
 
 from django.core.asgi import get_asgi_application
 
+
+# CONFIGURATION DES VARIABLES D'ENVIRONNEMENT
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+# POINT D'ENTRÉE ASGI POUR LES SERVEURS ASYNCHRONES (WEBSOCKETS, HTTP/2, ETC.)
 application = get_asgi_application()

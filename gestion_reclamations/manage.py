@@ -4,9 +4,14 @@ import os
 import sys
 
 
+# FONCTION PRINCIPALE DU GESTIONNAIRE DJANGO
 def main():
     """Run administrative tasks."""
+    
+    # CONFIGURATION DES VARIABLES D'ENVIRONNEMENT
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    
+    # IMPORT ET EXÉCUTION DES COMMANDES DJANGO
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -18,5 +23,6 @@ def main():
     execute_from_command_line(sys.argv)
 
 
+# POINT D'ENTRÉE DU SCRIPT
 if __name__ == '__main__':
     main()

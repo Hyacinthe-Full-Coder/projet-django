@@ -4,6 +4,7 @@ import 'ticket_list_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'technicien_dashboard_screen.dart';
 
+// ÉCRAN D'ACCUEIL AVEC REDIRECTION SELON LE RÔLE
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -12,16 +13,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  
+  // SERVICES ET DONNÉES
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _userProfile;
   bool _isLoading = true;
 
+  // CHARGEMENT DU PROFIL À L'INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
   }
 
+  // RÉCUPÉRATION DU PROFIL UTILISATEUR
   Future<void> _loadUserProfile() async {
     final profile = await _authService.getUserProfile();
     setState(() {
@@ -30,25 +35,32 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
+    
+    // AFFICHAGE CHARGEMENT
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Rediriger selon le rôle
+    // REDIRECTION SELON LE RÔLE
     if (_userProfile != null) {
       final role = _userProfile!['role'];
+      
+      // ADMIN → DASHBOARD ADMIN
       if (role == 'ADMIN') {
         return const AdminDashboardScreen();
-      } else if (role == 'TECHNICIEN') {
+      } 
+      // TECHNICIEN → DASHBOARD TECHNICIEN
+      else if (role == 'TECHNICIEN') {
         return const TechnicienDashboardScreen();
       }
     }
 
-    // Par défaut, écran des tickets pour citoyens
+    // PAR DÉFAUT : ÉCRAN DES TICKETS POUR CITOYENS
     return TicketListScreen(
       role: 'CITOYEN',
       name: '${_userProfile?['first_name'] ?? 'Utilisateur'} ${_userProfile?['last_name'] ?? ''}',

@@ -4,6 +4,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,6 +22,7 @@ INSTALLED_APPS = [
     'tickets',
 ]
 
+# Middleware configuration
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # En premier pour gérer les CORS
     'django.middleware.security.SecurityMiddleware',

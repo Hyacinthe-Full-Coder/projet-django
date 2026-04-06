@@ -3,6 +3,7 @@ import '../services/ticket_service.dart';
 import '../models/ticket.dart';
 import '../widgets/simple_pie_chart.dart';
 
+// ÉCRAN DES STATISTIQUES
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
@@ -11,20 +12,25 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
+  
+  // SERVICES ET DONNÉES
   final TicketService _ticketService = TicketService();
   late Future<List<Ticket>> _futureTickets;
   Map<String, int> _stats = {};
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadStatistics();
   }
 
+  // CHARGEMENT DES STATISTIQUES
   Future<void> _loadStatistics() async {
     _futureTickets = _ticketService.listerTickets();
     final tickets = await _futureTickets;
 
+    // CALCUL DES STATISTIQUES
     final stats = <String, int>{
       'total': tickets.length,
       'ouverts': tickets.where((t) => t.status == 'OUVERT').length,
@@ -41,20 +47,28 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     });
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Statistiques'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
       ),
+      
+      // CORPS PRINCIPAL
       body: FutureBuilder<List<Ticket>>(
         future: _futureTickets,
         builder: (context, snapshot) {
+          
+          // ÉTAT CHARGEMENT
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          
+          // ÉTAT ERREUR
           if (snapshot.hasError) {
             return Center(
               child: Column(
@@ -73,11 +87,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             );
           }
 
+          // AFFICHAGE DES STATISTIQUES
           return RefreshIndicator(
             onRefresh: _loadStatistics,
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // STATISTIQUE TOTALE
                 _buildStatCard(
                   'Total des tickets',
                   _stats['total']?.toString() ?? '0',
@@ -85,11 +101,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   Colors.blue,
                 ),
                 const SizedBox(height: 16),
+                
+                // SECTION PAR STATUT
                 const Text(
                   'Par statut',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
+                
+                // GRAPHIQUE CAMEMBERT PAR STATUT
                 SimplePieChart(
                   title: 'Distribution par statut',
                   data: [
@@ -101,6 +121,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   size: 200,
                 ),
                 const SizedBox(height: 16),
+                
+                // CARTES STATUT (LIGNE 1)
                 Row(
                   children: [
                     Expanded(
@@ -123,6 +145,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                
+                // CARTES STATUT (LIGNE 2)
                 Row(
                   children: [
                     Expanded(
@@ -145,11 +169,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
+                
+                // SECTION PAR TYPE
                 const Text(
                   'Par type',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
+                
+                // GRAPHIQUE CAMEMBERT PAR TYPE
                 SimplePieChart(
                   title: 'Distribution par type',
                   data: [
@@ -160,6 +188,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   size: 150,
                 ),
                 const SizedBox(height: 16),
+                
+                // CARTES PAR TYPE
                 _buildStatCard(
                   'Incidents',
                   _stats['incidents']?.toString() ?? '0',
@@ -188,6 +218,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
+  // CARTE STATISTIQUE GÉNÉRIQUE
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Card(
       elevation: 3,
@@ -196,6 +227,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
+            // ICÔNE COLORÉE
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -205,6 +237,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(width: 16),
+            
+            // TITRE ET VALEUR
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

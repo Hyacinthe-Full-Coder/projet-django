@@ -5,57 +5,77 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+# MIGRATION INITIALE DE L'APPLICATION TICKETS
 class Migration(migrations.Migration):
 
-    initial = True
+    initial = True  # Migration initiale (création des tables)
 
+    # DÉPENDANCES DE LA MIGRATION
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),  # Dépend du modèle utilisateur
     ]
 
+    # OPÉRATIONS À EXÉCUTER
     operations = [
+        
+        # CRÉATION DE LA TABLE TICKET
         migrations.CreateModel(
             name='Ticket',
             fields=[
+                # CHAMPS DE BASE
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('titre', models.CharField(max_length=200)),
                 ('description', models.TextField()),
+                
+                # CHAMPS DE CATÉGORISATION
                 ('type_ticket', models.CharField(choices=[('INCIDENT', 'Incident technique'), ('RECLAMATION', 'Réclamation'), ('DEMANDE', 'Demande de service')], default='INCIDENT', max_length=15)),
                 ('statut', models.CharField(choices=[('OUVERT', 'Ouvert'), ('EN_COURS', 'En cours de traitement'), ('RESOLU', 'Résolu'), ('CLOS', 'Clos / Archive')], default='OUVERT', max_length=10)),
                 ('priorite', models.CharField(choices=[('BASSE', 'Basse'), ('NORMALE', 'Normale'), ('HAUTE', 'Haute'), ('CRITIQUE', 'Critique')], default='NORMALE', max_length=10)),
+                
+                # CHAMPS TEMPORELS
                 ('date_creation', models.DateTimeField(auto_now_add=True)),
                 ('date_modification', models.DateTimeField(auto_now=True)),
                 ('date_resolution', models.DateTimeField(blank=True, null=True)),
+                
+                # CLÉS ÉTRANGÈRES
                 ('auteur', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tickets_crees', to=settings.AUTH_USER_MODEL)),
                 ('assigne_a', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tickets_assignes', to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'ordering': ['-date_creation'],
-                'verbose_name': 'Ticket',
-                'verbose_name_plural': 'Tickets',
+                'ordering': ['-date_creation'],        # Tri par date décroissante
+                'verbose_name': 'Ticket',              # Nom au singulier
+                'verbose_name_plural': 'Tickets',      # Nom au pluriel
             },
         ),
+        
+        # CRÉATION DE LA TABLE HISTORIQUE STATUT
         migrations.CreateModel(
             name='HistoriqueStatut',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ancien_statut', models.CharField(max_length=10)),
-                ('nouveau_statut', models.CharField(max_length=10)),
-                ('date_changement', models.DateTimeField(auto_now_add=True)),
+                ('ancien_statut', models.CharField(max_length=10)),   # Statut avant changement
+                ('nouveau_statut', models.CharField(max_length=10)),  # Statut après changement
+                ('date_changement', models.DateTimeField(auto_now_add=True)),  # Date du changement
+                
+                # CLÉS ÉTRANGÈRES
                 ('modifie_par', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
                 ('ticket', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='historique', to='tickets.ticket')),
             ],
-            options={'ordering': ['-date_changement']},
+            options={'ordering': ['-date_changement']},  # Tri par date décroissante
         ),
+        
+        # CRÉATION DE LA TABLE COMMENTAIRE
         migrations.CreateModel(
             name='Commentaire',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('contenu', models.TextField()),
-                ('date', models.DateTimeField(auto_now_add=True)),
+                ('contenu', models.TextField()),          # Texte du commentaire
+                ('date', models.DateTimeField(auto_now_add=True)),  # Date automatique
+                
+                # CLÉS ÉTRANGÈRES
                 ('auteur', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
                 ('ticket', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='commentaires', to='tickets.ticket')),
             ],
-            options={'ordering': ['date']},
+            options={'ordering': ['date']},  # Tri par date croissante
         ),
     ]

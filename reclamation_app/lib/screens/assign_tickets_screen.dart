@@ -3,6 +3,7 @@ import '../services/ticket_service.dart';
 import '../services/auth_service.dart';
 import '../models/ticket.dart';
 
+// ÉCRAN D'ASSIGNATION DES TICKETS (ADMIN)
 class AssignTicketsScreen extends StatefulWidget {
   const AssignTicketsScreen({super.key});
 
@@ -11,20 +12,25 @@ class AssignTicketsScreen extends StatefulWidget {
 }
 
 class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
+  
+  // SERVICES
   final TicketService _ticketService = TicketService();
   final AuthService _authService = AuthService();
 
+  // DONNÉES
   List<Ticket> _tickets = [];
   List<Map<String, dynamic>> _techniciens = [];
   bool _isLoading = true;
   String? _selectedFilter = 'non_assignes'; // 'non_assignes' ou 'tous'
 
+  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
+  // CHARGEMENT DES TICKETS ET TECHNICIENS
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -46,6 +52,7 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     }
   }
 
+  // FILTRAGE DES TICKETS (NON ASSIGNÉS UNIQUEMENT)
   List<Ticket> get _filteredTickets {
     if (_selectedFilter == 'non_assignes') {
       return _tickets.where((t) => t.assigneA == null).toList();
@@ -53,6 +60,7 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     return _tickets;
   }
 
+  // ASSIGNATION D'UN TICKET
   Future<void> _assignTicket(Ticket ticket, {int? technicienId, bool auto = false}) async {
     try {
       await _ticketService.assignerTicket(ticket.id, technicienId: technicienId, auto: auto);
@@ -71,6 +79,7 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     }
   }
 
+  // AFFICHAGE DU DIALOGUE D'ASSIGNATION
   void _showAssignDialog(Ticket ticket) {
     showDialog(
       context: context,
@@ -79,8 +88,11 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // INFOS TICKET
             Text('Titre: ${ticket.titre}'),
             const SizedBox(height: 16),
+            
+            // LISTE DES TECHNICIENS
             const Text('Choisir un technicien:'),
             const SizedBox(height: 8),
             ..._techniciens.map((tech) => ListTile(
@@ -91,7 +103,10 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                 _assignTicket(ticket, technicienId: tech['id']);
               },
             )),
+            
             const Divider(),
+            
+            // ASSIGNATION AUTOMATIQUE
             ListTile(
               title: const Text('Assignation automatique'),
               subtitle: const Text('Au technicien avec le moins de tickets'),
@@ -112,21 +127,25 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     );
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Assigner les Tickets'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
       ),
+      
+      // CORPS PRINCIPAL
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
               child: Column(
                 children: [
-                  // Filtres
+                  // SECTION FILTRES
                   Container(
                     padding: const EdgeInsets.all(16),
                     color: Colors.grey.shade100,
@@ -153,7 +172,7 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                     ),
                   ),
 
-                  // Liste des tickets
+                  // SECTION LISTE DES TICKETS
                   Expanded(
                     child: _filteredTickets.isEmpty
                         ? Center(
@@ -171,10 +190,13 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                               return Card(
                                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 child: ListTile(
+                                  // TITRE DU TICKET
                                   title: Text(
                                     ticket.titre,
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
+                                  
+                                  // INFORMATIONS DÉTAILLÉES
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -185,6 +207,8 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                                         Text('Assigné à: ${ticket.assigneA}', style: const TextStyle(color: Colors.green)),
                                     ],
                                   ),
+                                  
+                                  // BOUTON D'ASSIGNATION / INDICATEUR
                                   trailing: ticket.assigneA == null
                                       ? ElevatedButton(
                                           onPressed: () => _showAssignDialog(ticket),

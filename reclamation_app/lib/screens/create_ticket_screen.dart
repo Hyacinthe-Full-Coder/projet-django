@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/ticket_service.dart';
 
+// ÉCRAN DE CRÉATION DE TICKET (CITOYEN/TECHNICIEN)
 class CreateTicketScreen extends StatefulWidget {
   const CreateTicketScreen({super.key});
 
@@ -9,17 +10,23 @@ class CreateTicketScreen extends StatefulWidget {
 }
 
 class _CreateTicketScreenState extends State<CreateTicketScreen> {
+  
+  // CONTRÔLEURS DE FORMULAIRE
   final _formKey = GlobalKey<FormState>();
   final _titreCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  
+  // DONNÉES DU TICKET
   String _type = 'INCIDENT';
   String _priorite = 'NORMALE';
   bool _loading = false;
   final _service = TicketService();
 
+  // OPTIONS PRÉDÉFINIES
   static const _types = ['INCIDENT', 'RECLAMATION', 'DEMANDE'];
   static const _priorites = ['BASSE', 'NORMALE', 'HAUTE', 'CRITIQUE'];
 
+  // SOUMISSION DU FORMULAIRE
   Future<void> _soumettre() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -49,14 +56,18 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     }
   }
 
+  // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Nouveau ticket'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
       ),
+      
+      // CORPS PRINCIPAL
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -64,6 +75,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // CHAMP TITRE
               TextFormField(
                 controller: _titreCtrl,
                 decoration: const InputDecoration(
@@ -75,6 +87,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                     (v == null || v.isEmpty) ? 'Champ obligatoire' : null,
               ),
               const SizedBox(height: 16),
+              
+              // CHAMP DESCRIPTION
               TextFormField(
                 controller: _descCtrl,
                 decoration: const InputDecoration(
@@ -88,6 +102,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                     (v == null || v.isEmpty) ? 'Champ obligatoire' : null,
               ),
               const SizedBox(height: 16),
+              
+              // MENU DÉROULANT TYPE DE TICKET
               DropdownButtonFormField<String>(
                 value: _type,
                 items: _types
@@ -101,6 +117,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // MENU DÉROULANT PRIORITÉ
               DropdownButtonFormField<String>(
                 value: _priorite,
                 decoration: const InputDecoration(
@@ -114,6 +132,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 onChanged: (v) => setState(() => _priorite = v!),
               ),
               const SizedBox(height: 28),
+              
+              // BOUTON DE SOUMISSION
               ElevatedButton.icon(
                 onPressed: _loading ? null : _soumettre,
                 icon: _loading

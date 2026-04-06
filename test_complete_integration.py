@@ -347,8 +347,7 @@ class APITester:
         print(f"DEBUG: result after _request = {result}")
         sys.stdout.flush()
         
-        passed = True  # Force pass for debugging
-        syntax error here
+        passed = result["success"]
         
         if passed:
             print(f"         Total Tickets Assignés: {result['data'].get('total_tickets_assignes')}")

@@ -15,11 +15,11 @@ class TicketService {
     };
   }
 
-  Future<List<Ticket>> listerTickets({String? status, String? priorite}) async {
+  Future<List<Ticket>> listerTickets({String? statut, String? priorite}) async {
     String url = '$baseUrl/';
 
     final params = <String, String>{};
-    if (status != null) params['status'] = status;
+    if (statut != null && statut != 'TOUS') params['statut'] = statut;
     if (priorite != null) params['priorite'] = priorite;
     if (params.isNotEmpty) {
       url += '?' + Uri(queryParameters: params).query;

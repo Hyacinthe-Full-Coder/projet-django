@@ -20,7 +20,7 @@ class TicketListScreen extends StatefulWidget {
 class _TicketListScreenState extends State<TicketListScreen> {
   final _service = TicketService();
   late Future<List<Ticket>> _futureTickets;
-  String? _filterStatus;
+  String _filterStatus = 'TOUS';
 
   @override
   void initState() {
@@ -30,7 +30,9 @@ class _TicketListScreenState extends State<TicketListScreen> {
 
   void _charger() {
     setState(() {
-      _futureTickets = _service.listerTickets(status: _filterStatus);
+      _futureTickets = _service.listerTickets(
+        statut: _filterStatus == 'TOUS' ? null : _filterStatus,
+      );
     });
   }
 
@@ -68,12 +70,12 @@ class _TicketListScreenState extends State<TicketListScreen> {
               icon: const Icon(Icons.filter_list),
               onSelected: (val) {
                 setState(() {
-                  _filterStatus = val;
+                  _filterStatus = val ?? 'TOUS';
                 });
                 _charger();
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(value: null, child: Text('Tous')),
+                const PopupMenuItem(value: 'TOUS', child: Text('Tous')),
                 const PopupMenuItem(value: 'OUVERT', child: Text('Ouvert')),
                 const PopupMenuItem(value: 'EN_COURS', child: Text('En Cours')),
                 const PopupMenuItem(value: 'RESOLU', child: Text('Résolu')),

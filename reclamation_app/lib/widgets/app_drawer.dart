@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../screens/admin_dashboard_screen.dart';
 import '../screens/technicien_dashboard_screen.dart';
 import '../screens/ticket_list_screen.dart';
+import '../screens/create_ticket_screen.dart';
 import '../screens/assign_tickets_screen.dart';
 import '../screens/create_user_screen.dart';
 import '../screens/statistics_screen.dart';
@@ -36,41 +37,34 @@ class AppDrawer extends StatelessWidget {
               ),
               decoration: const BoxDecoration(color: Color(0xFF006743)),
             ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-                if (role == 'ADMIN') {
+            if (role == 'ADMIN') ...[
+              ListTile(
+                leading: const Icon(Icons.dashboard),
+                title: const Text('Dashboard'),
+                onTap: () {
+                  Navigator.pop(context);
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
                   );
-                } else {
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.list),
+                title: const Text('Mes Tickets'),
+                onTap: () {
+                  Navigator.pop(context);
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const TechnicienDashboardScreen()),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.list),
-              title: const Text('Mes Tickets'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TicketListScreen(
-                      role: role,
-                      name: name,
+                    MaterialPageRoute(
+                      builder: (_) => TicketListScreen(
+                        role: role,
+                        name: name,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            if (role == 'ADMIN') ...[
+                  );
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.assignment),
                 title: const Text('Assigner Tickets'),
@@ -93,18 +87,85 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.bar_chart),
+                title: const Text('Statistiques'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+                  );
+                },
+              ),
+            ] else if (role == 'TECHNICIEN') ...[
+              ListTile(
+                leading: const Icon(Icons.dashboard),
+                title: const Text('Dashboard'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TechnicienDashboardScreen()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.list),
+                title: const Text('Mes Tickets'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TicketListScreen(
+                        role: role,
+                        name: name,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bar_chart),
+                title: const Text('Statistiques'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StatisticsScreen()),
+                  );
+                },
+              ),
+            ] else ...[
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text('Créer un ticket'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.list),
+                title: const Text('Voir mes tickets'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TicketListScreen(
+                        role: role,
+                        name: name,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
-            ListTile(
-              leading: const Icon(Icons.bar_chart),
-              title: const Text('Statistiques'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const StatisticsScreen()),
-                );
-              },
-            ),
             const Spacer(),
             const Divider(),
             ListTile(

@@ -26,7 +26,7 @@ class _NotificationBadgeState extends State<NotificationBadge> {
 
   Future<void> _checkUnreadTickets() async {
     try {
-      final tickets = await widget.ticketService.listerTickets(status: 'OUVERT');
+      final tickets = await widget.ticketService.listerTickets(statut: 'OUVERT');
       // Pour cet exemple, on considère tous les tickets ouverts comme non lus
       // Dans un vrai système, il faudrait stocker la date de dernière lecture
       setState(() {

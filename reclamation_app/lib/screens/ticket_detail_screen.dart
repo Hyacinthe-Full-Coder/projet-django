@@ -19,37 +19,68 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   final AuthService _authService = AuthService();
   
   // DONNÉES
-  late Future<Ticket> _futureTicket;
+  Ticket? _ticket;
   Map<String, dynamic>? _userProfile;
   bool _isLoadingAction = false;
+  bool _isLoadingInitial = true;
+  String? _errorMessage;
   List<Map<String, dynamic>> _techniciens = [];
 
   // INITIALISATION
   @override
   void initState() {
     super.initState();
-    _futureTicket = _ticketService.getTicket(widget.ticketId);
-    _loadUserProfile();
-    _loadTechniciens();
+    _loadInitialData();
   }
 
-  // CHARGEMENT DU PROFIL
-  Future<void> _loadUserProfile() async {
-    final profile = await _authService.getUserProfile();
-    setState(() {
-      _userProfile = profile;
-    });
-  }
-
-  // CHARGEMENT DES TECHNICIENS
-  Future<void> _loadTechniciens() async {
+  // CHARGER TOUTES LES DONNÉES INITIALES
+  Future<void> _loadInitialData() async {
     try {
-      final techniciens = await _ticketService.listerTechniciens();
       setState(() {
-        _techniciens = techniciens;
+        _isLoadingInitial = true;
+        _errorMessage = null;
       });
+      
+      // Charger les 3 éléments en parallèle
+      final results = await Future.wait([
+        _ticketService.getTicket(widget.ticketId),
+        _authService.getUserProfile().then((p) => p ?? {}),
+        _ticketService.listerTechniciens(),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _ticket = results[0] as Ticket;
+          _userProfile = results[1] as Map<String, dynamic>;
+          _techniciens = results[2] as List<Map<String, dynamic>>;
+          _isLoadingInitial = false;
+        });
+      }
     } catch (e) {
-      print('Erreur chargement techniciens: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoadingInitial = false;
+        });
+      }
+    }
+  }
+
+  // RAFRAÎCHIR LES DONNÉES (SANS RECRÉER LA FUTURE)
+  Future<void> _refreshTicket() async {
+    try {
+      final updatedTicket = await _ticketService.getTicket(widget.ticketId);
+      if (mounted) {
+        setState(() {
+          _ticket = updatedTicket;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du rafraîchissement: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -60,9 +91,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     setState(() => _isLoadingAction = true);
     try {
       await _ticketService.changerStatus(widget.ticketId, nouveauStatut);
-      setState(() {
-        _futureTicket = _ticketService.getTicket(widget.ticketId);
-      });
+      // Rafraîchir le ticket SANS recréer la Future
+      await _refreshTicket();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Statut changé en $nouveauStatut')),
@@ -86,9 +116,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     setState(() => _isLoadingAction = true);
     try {
       await _ticketService.assignerTicket(widget.ticketId, technicienId: technicienId, auto: auto);
-      setState(() {
-        _futureTicket = _ticketService.getTicket(widget.ticketId);
-      });
+      // Rafraîchir le ticket SANS recréer la Future
+      await _refreshTicket();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ticket assigné avec succès')),
@@ -138,9 +167,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               setState(() => _isLoadingAction = true);
               try {
                 await _ticketService.commenter(widget.ticketId, controllerCommentaire.text);
-                setState(() {
-                  _futureTicket = _ticketService.getTicket(widget.ticketId);
-                });
+                // Rafraîchir le ticket SANS recréer la Future
+                await _refreshTicket();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Commentaire ajouté')),
@@ -282,60 +310,86 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingInitial) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Détails du ticket'),
+          backgroundColor: const Color(0xFF006743),
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Détails du ticket'),
+          backgroundColor: const Color(0xFF006743),
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Erreur lors du chargement du ticket',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _errorMessage!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadInitialData,
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_ticket == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Détails du ticket'),
+          backgroundColor: const Color(0xFF006743),
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: Text('Ticket non trouvé')),
+      );
+    }
+
+    final ticket = _ticket!;
+
     return Scaffold(
       // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Détails du ticket'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshTicket,
+          ),
+        ],
       ),
       
       // CORPS PRINCIPAL
-      body: FutureBuilder<Ticket>(
-        future: _futureTicket,
-        builder: (context, snapshot) {
-          // ÉTAT CHARGEMENT
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          // ÉTAT ERREUR
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur lors du chargement du ticket',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${snapshot.error}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => setState(() {
-                        _futureTicket = _ticketService.getTicket(widget.ticketId);
-                      }),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          
-          final ticket = snapshot.data!;
-          
-          return SingleChildScrollView(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,8 +581,18 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 ],
               ],
             ),
-          );
-        },
+          ),
+          // OVERLAY DE CHARGEMENT LORS DES ACTIONS
+          if (_isLoadingAction)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

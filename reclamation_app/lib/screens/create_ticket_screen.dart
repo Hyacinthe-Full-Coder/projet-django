@@ -89,7 +89,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
             color: selected ? const Color(0xFFEAF6EF) : Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected ? const Color(0xFF006743) : const Color(0xFFE0E0E0),
+              color: selected
+                  ? const Color(0xFF006743)
+                  : const Color(0xFFE0E0E0),
               width: selected ? 1.8 : 1,
             ),
             boxShadow: [
@@ -105,14 +107,18 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               Icon(
                 _typeIcons[type],
                 size: 26,
-                color: selected ? const Color(0xFF006743) : const Color(0xFF616161),
+                color: selected
+                    ? const Color(0xFF006743)
+                    : const Color(0xFF616161),
               ),
               const SizedBox(height: 12),
               Text(
                 type,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: selected ? const Color(0xFF006743) : const Color(0xFF424242),
+                  color: selected
+                      ? const Color(0xFF006743)
+                      : const Color(0xFF424242),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -136,7 +142,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
             color: selected ? const Color(0xFFEAF6EF) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? const Color(0xFF006743) : const Color(0xFFE0E0E0),
+              color: selected
+                  ? const Color(0xFF006743)
+                  : const Color(0xFFE0E0E0),
               width: selected ? 1.8 : 1,
             ),
             boxShadow: [
@@ -152,7 +160,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               _priorityLabels[priority]!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: selected ? const Color(0xFF006743) : const Color(0xFF424242),
+                color: selected
+                    ? const Color(0xFF006743)
+                    : const Color(0xFF424242),
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -180,6 +190,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF2F6F2),
       appBar: AppBar(
         title: const Text('Créer une demande'),
@@ -188,7 +199,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -238,7 +254,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   ),
                   const SizedBox(height: 14),
                   Row(
-                    children: _types.map((type) => _buildTypeCard(type)).toList(),
+                    children: _types
+                        .map((type) => _buildTypeCard(type))
+                        .toList(),
                   ),
                 ],
               ),
@@ -288,7 +306,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                     const SizedBox(height: 18),
                     _sectionTitle('Niveau d\'urgence'),
                     Row(
-                      children: _priorites.map((priority) => _buildPriorityCard(priority)).toList(),
+                      children: _priorites
+                          .map((priority) => _buildPriorityCard(priority))
+                          .toList(),
                     ),
                     const SizedBox(height: 18),
                     _sectionTitle('Description détaillée'),
@@ -335,7 +355,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   : const Icon(Icons.send),
               label: Text(
                 _loading ? 'Envoi...' : 'Envoyer ma demande',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF006743),

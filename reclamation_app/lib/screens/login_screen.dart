@@ -11,12 +11,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  
   // CONTRÔLEURS DE FORMULAIRE
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _authService = AuthService();
-  
+
   // ÉTATS DE L'INTERFACE
   bool _loading = false;
   bool _obscurePassword = true;
@@ -35,14 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _loading = true;
       _erreur = null;
     });
-    
+
     try {
       // APPEL API DE CONNEXION
       final result = await _authService.login(
         _emailCtrl.text.trim(),
         _passwordCtrl.text,
       );
-      
+
       if (result['success'] == true) {
         if (!mounted) return;
         // REDIRECTION VERS L'ACCUEIL
@@ -68,13 +67,19 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       // COULEUR DE FOND VERT
       backgroundColor: const Color(0xFF006743),
-      
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              24 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -92,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Color(0xFF006743),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // TITRE APPLICATION
                     const Text(
                       'Gestion des Réclamations',
@@ -103,14 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // SOUS-TITRE
                     const Text(
                       'Connexion',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
 
@@ -144,8 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : Icons.visibility,
                           ),
                           onPressed: () {
-                            setState(() =>
-                                _obscurePassword = !_obscurePassword);
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
                           },
                         ),
                         border: OutlineInputBorder(

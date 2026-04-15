@@ -11,7 +11,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  
   // CONTRÔLEURS DE FORMULAIRE
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
@@ -37,8 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // VÉRIFICATION MOT DE PASSE
     if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
-      setState(() =>
-          _erreur = 'Les mots de passe ne correspondent pas');
+      setState(() => _erreur = 'Les mots de passe ne correspondent pas');
       return;
     }
 
@@ -85,18 +83,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       // COULEUR DE FOND VERT
       backgroundColor: const Color(0xFF006743),
-      
+
       // BARRE D'APPLICATION
       appBar: AppBar(
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         title: const Text('Inscription'),
       ),
-      
+
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              24 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -127,10 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         'Citoyen / Agent métier',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 24),
 
@@ -252,8 +253,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   : Icons.visibility,
                             ),
                             onPressed: () {
-                              setState(() =>
-                                  _obscurePassword = !_obscurePassword);
+                              setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              );
                             },
                           ),
                           border: OutlineInputBorder(
@@ -288,8 +290,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   : Icons.visibility,
                             ),
                             onPressed: () {
-                              setState(() =>
-                                  _obscureConfirm = !_obscureConfirm);
+                              setState(
+                                () => _obscureConfirm = !_obscureConfirm,
+                              );
                             },
                           ),
                           border: OutlineInputBorder(
@@ -355,8 +358,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: _loading ? null : _register,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF006743),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),

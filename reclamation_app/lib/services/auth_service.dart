@@ -258,6 +258,42 @@ class AuthService {
     return prefs.getString('access_token');
   }
 
+  // RÉCUPÉRATION DU TOKEN DE REFRESH
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('refresh_token');
+  }
+
+  // RAFRAÎCHIR LE TOKEN D'ACCÈS AVEC LE REFRESH TOKEN
+  Future<bool> refreshAccessToken() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await _postWithTimeout(
+        Uri.parse('$baseUrl${ApiConfig.authRefresh}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        if (data['access'] != null) {
+          await prefs.setString('access_token', data['access']);
+          return true;
+        }
+      }
+    } catch (_) {
+      // Ignorer et retourner false si refresh échoue
+    }
+
+    await logout();
+    return false;
+  }
+
   // VÉRIFICATION DE L'ÉTAT DE CONNEXION
   Future<bool> isLoggedIn() async {
     final token = await getAccessToken();
@@ -282,7 +318,16 @@ class AuthService {
       }
       // Si token expiré (401), tenter de le rafraîchir
       if (response.statusCode == 401) {
-        // TODO: Implémenter refresh token
+        final refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+
+        final retryResponse = await _getWithTimeout(
+          Uri.parse('$baseUrl${ApiConfig.authProfile}'),
+          headers: {'Authorization': 'Bearer ${await getAccessToken()}'},
+        );
+        if (retryResponse.statusCode == 200) {
+          return jsonDecode(retryResponse.body);
+        }
         return null;
       }
       return null;

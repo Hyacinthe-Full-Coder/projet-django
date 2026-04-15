@@ -72,6 +72,31 @@ class TicketService {
     }
   }
 
+  Future<http.Response> _postWithRefresh(
+    Uri uri, {
+    required Map<String, String> headers,
+    required String body,
+  }) async {
+    final response = await _postWithTimeout(uri, headers: headers, body: body);
+    if (response.statusCode != 401) {
+      return response;
+    }
+
+    final refreshed = await _auth.refreshAccessToken();
+    if (!refreshed) {
+      return response;
+    }
+
+    final token = await _auth.getAccessToken();
+    if (token == null) {
+      return response;
+    }
+
+    final retryHeaders = Map<String, String>.from(headers);
+    retryHeaders['Authorization'] = 'Bearer $token';
+    return await _postWithTimeout(uri, headers: retryHeaders, body: body);
+  }
+
   Future<http.Response> _patchWithTimeout(
     Uri uri, {
     required Map<String, String> headers,
@@ -185,7 +210,7 @@ class TicketService {
   // CRÉER UN NOUVEAU TICKET (AVEC TIMEOUT)
   Future<Ticket> creerTicket(Map<String, dynamic> data) async {
     try {
-      final response = await _postWithTimeout(
+      final response = await _postWithRefresh(
         Uri.parse(_ticketsUrl),
         headers: await _headers(),
         body: jsonEncode(data),

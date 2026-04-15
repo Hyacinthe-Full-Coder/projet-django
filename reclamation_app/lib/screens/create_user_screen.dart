@@ -10,7 +10,6 @@ class CreateUserScreen extends StatefulWidget {
 }
 
 class _CreateUserScreenState extends State<CreateUserScreen> {
-  
   // CONTRÔLEURS DE FORMULAIRE
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
@@ -37,8 +36,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
 
     // VÉRIFICATION MOT DE PASSE
     if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
-      setState(() =>
-          _erreur = 'Les mots de passe ne correspondent pas');
+      setState(() => _erreur = 'Les mots de passe ne correspondent pas');
       return;
     }
 
@@ -63,7 +61,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
 
       if (result['success'] == true) {
         setState(() => _success = result['message']);
-        
+
         // RÉINITIALISATION DU FORMULAIRE
         _formKey.currentState!.reset();
         _emailCtrl.clear();
@@ -101,11 +99,17 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
         foregroundColor: Colors.white,
         title: const Text('Créer Utilisateur'),
       ),
-      
+
       // CORPS PRINCIPAL
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -293,8 +297,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                                 : Icons.visibility,
                           ),
                           onPressed: () {
-                            setState(() =>
-                                _obscurePassword = !_obscurePassword);
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
                           },
                         ),
                         border: OutlineInputBorder(
@@ -329,8 +334,7 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
                                 : Icons.visibility,
                           ),
                           onPressed: () {
-                            setState(() =>
-                                _obscureConfirm = !_obscureConfirm);
+                            setState(() => _obscureConfirm = !_obscureConfirm);
                           },
                         ),
                         border: OutlineInputBorder(

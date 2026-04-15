@@ -21,7 +21,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
   final _service = TicketService();
   late Future<List<Ticket>> _futureTickets;
   String _filterStatus = 'TOUS';
-  
+
   // Statistiques
   Map<String, int> _stats = {
     'total': 0,
@@ -36,22 +36,25 @@ class _TicketListScreenState extends State<TicketListScreen> {
     _charger();
   }
 
-  void _charger() {
+  void _charger({bool forceRefresh = false}) {
     setState(() {
       _futureTickets = _service.listerTickets(
         statut: _filterStatus == 'TOUS' ? null : _filterStatus,
+        forceRefresh: forceRefresh,
       );
     });
-    _loadStats();
+    _loadStats(forceRefresh: forceRefresh);
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _loadStats({bool forceRefresh = false}) async {
     try {
-      final tickets = await _service.listerTickets();
+      final tickets = await _service.listerTickets(forceRefresh: forceRefresh);
       setState(() {
         _stats['total'] = tickets.length;
         _stats['incidents'] = tickets.where((t) => t.type == 'INCIDENT').length;
-        _stats['reclamations'] = tickets.where((t) => t.type == 'RECLAMATION').length;
+        _stats['reclamations'] = tickets
+            .where((t) => t.type == 'RECLAMATION')
+            .length;
         _stats['demandes'] = tickets.where((t) => t.type == 'DEMANDE').length;
       });
     } catch (e) {
@@ -106,9 +109,11 @@ class _TicketListScreenState extends State<TicketListScreen> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _filterStatus = label == 'Tous' ? 'TOUS' : 
-                          (label == 'Ouvert' ? 'OUVERT' : 
-                          (label == 'En cours' ? 'EN_COURS' : 'RESOLU'));
+          _filterStatus = label == 'Tous'
+              ? 'TOUS'
+              : (label == 'Ouvert'
+                    ? 'OUVERT'
+                    : (label == 'En cours' ? 'EN_COURS' : 'RESOLU'));
         });
         _charger();
       },
@@ -134,11 +139,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F2),
-      drawer: AppDrawer(
-        role: widget.role,
-        name: widget.name,
-        onLogout: null,
-      ),
+      drawer: AppDrawer(role: widget.role, name: widget.name, onLogout: null),
       appBar: AppBar(
         title: const Text('Mes Tickets'),
         backgroundColor: const Color(0xFF006743),
@@ -266,7 +267,8 @@ class _TicketListScreenState extends State<TicketListScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => TicketDetailScreen(ticketId: tickets[index].id),
+                            builder: (_) =>
+                                TicketDetailScreen(ticketId: tickets[index].id),
                           ),
                         ).then((_) => _charger()),
                       ),
@@ -279,10 +281,16 @@ class _TicketListScreenState extends State<TicketListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
-        ).then((_) => _charger()),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
+          ).then((result) {
+            if (result == true) {
+              _charger(forceRefresh: true);
+            }
+          });
+        },
         backgroundColor: const Color(0xFF006743),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Icons.add, color: Colors.white, size: 28),

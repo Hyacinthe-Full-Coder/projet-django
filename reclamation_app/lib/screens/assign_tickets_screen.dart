@@ -11,7 +11,6 @@ class AssignTicketsScreen extends StatefulWidget {
 }
 
 class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
-  
   // SERVICES
   final TicketService _ticketService = TicketService();
 
@@ -20,12 +19,23 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
   List<Map<String, dynamic>> _techniciens = [];
   bool _isLoading = true;
   String? _selectedFilter = 'non_assignes'; // 'non_assignes' ou 'tous'
+  
+  // RECHERCHE TECHNICIENS
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   // INITIALISATION
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  // NETTOYAGE
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // CHARGEMENT DES TICKETS ET TECHNICIENS
@@ -41,9 +51,9 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -58,10 +68,31 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     return _tickets;
   }
 
+  // FILTRAGE DES TECHNICIENS (PAR RECHERCHE)
+  List<Map<String, dynamic>> get _filteredTechniciens {
+    if (_searchQuery.isEmpty) {
+      return _techniciens;
+    }
+    final query = _searchQuery.toLowerCase();
+    return _techniciens
+        .where((tech) =>
+            '${tech['first_name']} ${tech['last_name']}'.toLowerCase().contains(query) ||
+            (tech['email'] as String).toLowerCase().contains(query))
+        .toList();
+  }
+
   // ASSIGNATION D'UN TICKET
-  Future<void> _assignTicket(Ticket ticket, {int? technicienId, bool auto = false}) async {
+  Future<void> _assignTicket(
+    Ticket ticket, {
+    int? technicienId,
+    bool auto = false,
+  }) async {
     try {
-      await _ticketService.assignerTicket(ticket.id, technicienId: technicienId, auto: auto);
+      await _ticketService.assignerTicket(
+        ticket.id,
+        technicienId: technicienId,
+        auto: auto,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ticket assigné avec succès')),
@@ -71,7 +102,9 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'assignation: ${e.toString()}')),
+          SnackBar(
+            content: Text('Erreur lors de l\'assignation: ${e.toString()}'),
+          ),
         );
       }
     }
@@ -83,37 +116,44 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Assigner le ticket #${ticket.id}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // INFOS TICKET
-            Text('Titre: ${ticket.titre}'),
-            const SizedBox(height: 16),
-            
-            // LISTE DES TECHNICIENS
-            const Text('Choisir un technicien:'),
-            const SizedBox(height: 8),
-            ..._techniciens.map((tech) => ListTile(
-              title: Text('${tech['first_name']} ${tech['last_name']}'),
-              subtitle: Text(tech['email']),
-              onTap: () {
-                Navigator.of(context).pop();
-                _assignTicket(ticket, technicienId: tech['id']);
-              },
-            )),
-            
-            const Divider(),
-            
-            // ASSIGNATION AUTOMATIQUE
-            ListTile(
-              title: const Text('Assignation automatique'),
-              subtitle: const Text('Au technicien avec le moins de tickets'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _assignTicket(ticket, auto: true);
-              },
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            minWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Titre: ${ticket.titre}'),
+                const SizedBox(height: 16),
+                const Text('Choisir un technicien:'),
+                const SizedBox(height: 8),
+                ..._techniciens.map(
+                  (tech) => ListTile(
+                    title: Text('${tech['first_name']} ${tech['last_name']}'),
+                    subtitle: Text(tech['email']),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _assignTicket(ticket, technicienId: tech['id']);
+                    },
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  title: const Text('Assignation automatique'),
+                  subtitle: const Text(
+                    'Au technicien avec le moins de tickets',
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _assignTicket(ticket, auto: true);
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -135,7 +175,7 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
       ),
-      
+
       // CORPS PRINCIPAL
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -150,7 +190,10 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Filtrer: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Filtrer: ',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
@@ -159,14 +202,18 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                               label: const Text('Non assignés'),
                               selected: _selectedFilter == 'non_assignes',
                               onSelected: (selected) {
-                                if (selected) setState(() => _selectedFilter = 'non_assignes');
+                                if (selected)
+                                  setState(
+                                    () => _selectedFilter = 'non_assignes',
+                                  );
                               },
                             ),
                             FilterChip(
                               label: const Text('Tous les tickets'),
                               selected: _selectedFilter == 'tous',
                               onSelected: (selected) {
-                                if (selected) setState(() => _selectedFilter = 'tous');
+                                if (selected)
+                                  setState(() => _selectedFilter = 'tous');
                               },
                             ),
                           ],
@@ -183,7 +230,10 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                               _selectedFilter == 'non_assignes'
                                   ? 'Aucun ticket non assigné'
                                   : 'Aucun ticket disponible',
-                              style: const TextStyle(fontSize: 16, color: Colors.grey),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
                           )
                         : ListView.builder(
@@ -191,36 +241,55 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                             itemBuilder: (context, index) {
                               final ticket = _filteredTickets[index];
                               return Card(
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 child: ListTile(
                                   // TITRE DU TICKET
                                   title: Text(
                                     ticket.titre,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  
+
                                   // INFORMATIONS DÉTAILLÉES
                                   subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Type: ${ticket.type} • Priorité: ${ticket.priorite}'),
+                                      Text(
+                                        'Type: ${ticket.type} • Priorité: ${ticket.priorite}',
+                                      ),
                                       Text('Statut: ${ticket.status}'),
                                       Text('Auteur: ${ticket.auteurNom}'),
                                       if (ticket.assigneA != null)
-                                        Text('Assigné à: ${ticket.assigneA}', style: const TextStyle(color: Colors.green)),
+                                        Text(
+                                          'Assigné à: ${ticket.assigneA}',
+                                          style: const TextStyle(
+                                            color: Colors.green,
+                                          ),
+                                        ),
                                     ],
                                   ),
-                                  
+
                                   // BOUTON D'ASSIGNATION / INDICATEUR
                                   trailing: ticket.assigneA == null
                                       ? ElevatedButton(
-                                          onPressed: () => _showAssignDialog(ticket),
+                                          onPressed: () =>
+                                              _showAssignDialog(ticket),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF006743),
+                                            backgroundColor: const Color(
+                                              0xFF006743,
+                                            ),
                                           ),
                                           child: const Text('Assigner'),
                                         )
-                                      : const Icon(Icons.check_circle, color: Colors.green),
+                                      : const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                        ),
                                   onTap: () => _showAssignDialog(ticket),
                                 ),
                               );

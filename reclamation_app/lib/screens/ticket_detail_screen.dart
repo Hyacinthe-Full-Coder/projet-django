@@ -469,47 +469,101 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
                 // SECTION ACTIONS
                 if (_userProfile != null && (_userProfile!['role'] == 'TECHNICIEN' || _userProfile!['role'] == 'ADMIN')) ...[
-                  Row(
-                    children: [
-                      // BOUTON CHANGER STATUT
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null)) 
-                              ? null 
-                              : _montrerDialogStatut,
-                          icon: _isLoadingAction
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.edit),
-                          label: const Text('Changer statut'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF006743),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      
-                      // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
-                      if (_userProfile!['role'] == 'ADMIN')
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _techniciens.isEmpty ? null : _montrerDialogAssignation,
-                            icon: const Icon(Icons.assignment_ind),
-                            label: const Text('Assigner'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 420;
+                      if (isNarrow) {
+                        // VERSION VERTICALE POUR ÉCRANS ÉTROITS
+                        return Column(
+                          children: [
+                            // BOUTON CHANGER STATUT
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null))
+                                    ? null
+                                    : _montrerDialogStatut,
+                                icon: _isLoadingAction
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.edit),
+                                label: const Text('Changer statut'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF006743),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                    ],
+                            const SizedBox(height: 12),
+
+                            // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
+                            if (_userProfile!['role'] == 'ADMIN')
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: _techniciens.isEmpty ? null : _montrerDialogAssignation,
+                                  icon: const Icon(Icons.assignment_ind),
+                                  label: const Text('Assigner'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      } else {
+                        // VERSION HORIZONTALE POUR ÉCRANS LARGES
+                        return Row(
+                          children: [
+                            // BOUTON CHANGER STATUT
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null))
+                                    ? null
+                                    : _montrerDialogStatut,
+                                icon: _isLoadingAction
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.edit),
+                                label: const Text('Changer statut'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF006743),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
+                            if (_userProfile!['role'] == 'ADMIN')
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _techniciens.isEmpty ? null : _montrerDialogAssignation,
+                                  icon: const Icon(Icons.assignment_ind),
+                                  label: const Text('Assigner'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],

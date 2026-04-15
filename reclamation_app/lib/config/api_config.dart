@@ -1,21 +1,37 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 // Configuration centralisée pour les appels API
 class ApiConfig {
   // Déterminer l'adresse IP du backend selon l'environnement
   static String get baseUrl {
     // Sur émulateur Android : 10.0.2.2 remplace localhost
-    // Sur device physique : utiliser l'IP du serveur (À CONFIGURER)
+    // Sur device physique Android ou iOS : utiliser l'IP du serveur local
+    // Sur desktop : utiliser localhost
     // Sur web : utiliser localhost
     
     const String _backendHost = String.fromEnvironment(
       'BACKEND_HOST',
-      defaultValue: '10.0.2.2', // Android émulateur
+      defaultValue: '',
     );
     const String _backendPort = String.fromEnvironment(
       'BACKEND_PORT',
       defaultValue: '8000',
     );
-    
-    return 'http://$_backendHost:$_backendPort/api';
+
+    final host = _backendHost.isNotEmpty ? _backendHost : _defaultHostForPlatform();
+    return 'http://$host:$_backendPort/api';
+  }
+
+  static String _defaultHostForPlatform() {
+    if (kIsWeb) return 'localhost';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return '10.0.2.2';
+      case TargetPlatform.iOS:
+        return '127.0.0.1';
+      default:
+        return '127.0.0.1';
+    }
   }
 
   // TIMEOUTS (en secondes)
@@ -27,7 +43,7 @@ class ApiConfig {
   static const String authLogin = '/auth/login/';
   static const String authRegister = '/auth/register/';
   static const String authRefresh = '/auth/refresh/';
-  static const String authProfile = '/auth/me/';
+  static const String authProfile = '/auth/profile/';
   
   static const String ticketsList = '/tickets/';
   static const String ticketsDetail = '/tickets/{id}/';

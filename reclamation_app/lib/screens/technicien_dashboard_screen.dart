@@ -281,21 +281,29 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
       'CLOS': Colors.grey,
     };
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 6,
-      mainAxisSpacing: 6,
-      childAspectRatio: 2.5,
-      children: stats.entries.map((e) {
-        return _buildStatCard(
-          e.key,
-          e.value.toString(),
-          Icons.circle,
-          colors[e.key] ?? Colors.grey,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 420;
+        final crossAxisCount = isNarrow ? 1 : 2;
+        final childAspectRatio = isNarrow ? 3.2 : 2.5;
+
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
+          childAspectRatio: childAspectRatio,
+          children: stats.entries.map((e) {
+            return _buildStatCard(
+              e.key,
+              e.value.toString(),
+              Icons.circle,
+              colors[e.key] ?? Colors.grey,
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 

@@ -1,6 +1,6 @@
 SECRET_KEY = 'django-insecure-please-change-me-to-a-real-secret-key'
 DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']  # Autoriser les requêtes depuis le téléphone et le réseau local en développement
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -73,6 +73,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost',
     'http://127.0.0.1',
 ]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Templates (nécessaire pour l'admin)

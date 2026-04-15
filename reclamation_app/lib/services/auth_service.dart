@@ -96,17 +96,25 @@ class AuthService {
         } catch (_) {
           return {
             'success': false,
-            'message': 'Email ou mot de passe incorrect.'
+            'message': 'Email ou mot de passe incorrect. (${response.statusCode})'
           };
         }
       }
 
       // AUTRES ERREURS
-      return {
-        'success': false,
-        'message':
-            'Erreur serveur (${response.statusCode}). Contactez l\'administrateur.'
-      };
+      try {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': 'Erreur serveur (${response.statusCode}) : ${data.toString()}'
+        };
+      } catch (_) {
+        return {
+          'success': false,
+          'message':
+              'Erreur serveur (${response.statusCode}) : ${response.body}'
+        };
+      }
     } on Exception catch (e) {
       return {'success': false, 'message': e.toString()};
     }
@@ -146,12 +154,19 @@ class AuthService {
         final data = jsonDecode(response.body);
         String message = 'Erreur lors de l\'inscription';
         if (data is Map) {
+          if (data.containsKey('detail')) message = data['detail'];
+          if (data.containsKey('message')) message = data['message'];
           if (data.containsKey('email')) message = data['email'][0];
           if (data.containsKey('username')) message = data['username'][0];
+        } else {
+          message = data.toString();
         }
         return {'success': false, 'message': message};
       } catch (_) {
-        return {'success': false, 'message': 'Erreur lors de l\'inscription'};
+        return {
+          'success': false,
+          'message': 'Erreur lors de l\'inscription (${response.statusCode})'
+        };
       }
     } on Exception catch (e) {
       return {'success': false, 'message': e.toString()};

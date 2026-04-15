@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/ticket_service.dart';
-import '../services/auth_service.dart';
 import '../models/ticket.dart';
 
 // ÉCRAN D'ASSIGNATION DES TICKETS (ADMIN)
@@ -15,7 +14,6 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
   
   // SERVICES
   final TicketService _ticketService = TicketService();
-  final AuthService _authService = AuthService();
 
   // DONNÉES
   List<Ticket> _tickets = [];
@@ -149,24 +147,29 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     color: Colors.grey.shade100,
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('Filtrer: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 16),
-                        FilterChip(
-                          label: const Text('Non assignés'),
-                          selected: _selectedFilter == 'non_assignes',
-                          onSelected: (selected) {
-                            if (selected) setState(() => _selectedFilter = 'non_assignes');
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        FilterChip(
-                          label: const Text('Tous les tickets'),
-                          selected: _selectedFilter == 'tous',
-                          onSelected: (selected) {
-                            if (selected) setState(() => _selectedFilter = 'tous');
-                          },
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            FilterChip(
+                              label: const Text('Non assignés'),
+                              selected: _selectedFilter == 'non_assignes',
+                              onSelected: (selected) {
+                                if (selected) setState(() => _selectedFilter = 'non_assignes');
+                              },
+                            ),
+                            FilterChip(
+                              label: const Text('Tous les tickets'),
+                              selected: _selectedFilter == 'tous',
+                              onSelected: (selected) {
+                                if (selected) setState(() => _selectedFilter = 'tous');
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -122,51 +122,94 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // CARTES STATUT (LIGNE 1)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Ouverts',
-                        _stats['ouverts']?.toString() ?? '0',
-                        Icons.schedule,
-                        Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildStatCard(
-                        'En cours',
-                        _stats['en_cours']?.toString() ?? '0',
-                        Icons.work,
-                        Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                
-                // CARTES STATUT (LIGNE 2)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Résolus',
-                        _stats['resolus']?.toString() ?? '0',
-                        Icons.check_circle,
-                        Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Clos',
-                        _stats['clos']?.toString() ?? '0',
-                        Icons.archive,
-                        Colors.grey,
-                      ),
-                    ),
-                  ],
+                // CARTES STATUT (ADAPTATIF)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 420;
+                    if (isNarrow) {
+                      // VERSION VERTICALE POUR ÉCRANS ÉTROITS
+                      return Column(
+                        children: [
+                          _buildStatCard(
+                            'Ouverts',
+                            _stats['ouverts']?.toString() ?? '0',
+                            Icons.schedule,
+                            Colors.orange,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStatCard(
+                            'En cours',
+                            _stats['en_cours']?.toString() ?? '0',
+                            Icons.work,
+                            Colors.blue,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStatCard(
+                            'Résolus',
+                            _stats['resolus']?.toString() ?? '0',
+                            Icons.check_circle,
+                            Colors.green,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStatCard(
+                            'Clos',
+                            _stats['clos']?.toString() ?? '0',
+                            Icons.archive,
+                            Colors.grey,
+                          ),
+                        ],
+                      );
+                    } else {
+                      // VERSION HORIZONTALE POUR ÉCRANS LARGES
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Ouverts',
+                                  _stats['ouverts']?.toString() ?? '0',
+                                  Icons.schedule,
+                                  Colors.orange,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'En cours',
+                                  _stats['en_cours']?.toString() ?? '0',
+                                  Icons.work,
+                                  Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Résolus',
+                                  _stats['resolus']?.toString() ?? '0',
+                                  Icons.check_circle,
+                                  Colors.green,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Clos',
+                                  _stats['clos']?.toString() ?? '0',
+                                  Icons.archive,
+                                  Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(height: 24),
                 

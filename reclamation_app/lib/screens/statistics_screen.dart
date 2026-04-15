@@ -93,23 +93,56 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // STATISTIQUE TOTALE
-                _buildStatCard(
-                  'Total des tickets',
-                  _stats['total']?.toString() ?? '0',
-                  Icons.confirmation_number,
-                  Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                
                 // SECTION PAR STATUT
                 const Text(
-                  'Par statut',
+                  'Résumé des Tickets',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 
+                // GRILLE 2x2 DES CARTES STATUT - ALIGNÉES
+                GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.3,
+                  children: [
+                    _buildStatCardCompact(
+                      'Total',
+                      _stats['total']?.toString() ?? '0',
+                      Icons.confirmation_number,
+                      Colors.blue,
+                    ),
+                    _buildStatCardCompact(
+                      'En cours',
+                      _stats['en_cours']?.toString() ?? '0',
+                      Icons.work,
+                      Colors.orange,
+                    ),
+                    _buildStatCardCompact(
+                      'Résolus',
+                      _stats['resolus']?.toString() ?? '0',
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                    _buildStatCardCompact(
+                      'Clos',
+                      _stats['clos']?.toString() ?? '0',
+                      Icons.archive,
+                      Colors.grey,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
                 // GRAPHIQUE CAMEMBERT PAR STATUT
+                const Text(
+                  'Distribution par statut',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
                 SimplePieChart(
                   title: 'Distribution par statut',
                   data: [
@@ -120,103 +153,43 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ],
                   size: 200,
                 ),
-                const SizedBox(height: 16),
-                
-                // CARTES STATUT (ADAPTATIF)
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 420;
-                    if (isNarrow) {
-                      // VERSION VERTICALE POUR ÉCRANS ÉTROITS
-                      return Column(
-                        children: [
-                          _buildStatCard(
-                            'Ouverts',
-                            _stats['ouverts']?.toString() ?? '0',
-                            Icons.schedule,
-                            Colors.orange,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildStatCard(
-                            'En cours',
-                            _stats['en_cours']?.toString() ?? '0',
-                            Icons.work,
-                            Colors.blue,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildStatCard(
-                            'Résolus',
-                            _stats['resolus']?.toString() ?? '0',
-                            Icons.check_circle,
-                            Colors.green,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildStatCard(
-                            'Clos',
-                            _stats['clos']?.toString() ?? '0',
-                            Icons.archive,
-                            Colors.grey,
-                          ),
-                        ],
-                      );
-                    } else {
-                      // VERSION HORIZONTALE POUR ÉCRANS LARGES
-                      return Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Ouverts',
-                                  _stats['ouverts']?.toString() ?? '0',
-                                  Icons.schedule,
-                                  Colors.orange,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildStatCard(
-                                  'En cours',
-                                  _stats['en_cours']?.toString() ?? '0',
-                                  Icons.work,
-                                  Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Résolus',
-                                  _stats['resolus']?.toString() ?? '0',
-                                  Icons.check_circle,
-                                  Colors.green,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Clos',
-                                  _stats['clos']?.toString() ?? '0',
-                                  Icons.archive,
-                                  Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    }
-                  },
-                ),
                 const SizedBox(height: 24),
                 
                 // SECTION PAR TYPE
                 const Text(
-                  'Par type',
+                  'Distribution par Type',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                
+                // GRILLE 3 COLONNES POUR LES TYPES
+                GridView.count(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.2,
+                  children: [
+                    _buildStatCardCompact(
+                      'Incidents',
+                      _stats['incidents']?.toString() ?? '0',
+                      Icons.bug_report,
+                      Colors.red,
+                    ),
+                    _buildStatCardCompact(
+                      'Réclamations',
+                      _stats['reclamations']?.toString() ?? '0',
+                      Icons.feedback,
+                      Colors.orange,
+                    ),
+                    _buildStatCardCompact(
+                      'Demandes',
+                      _stats['demandes']?.toString() ?? '0',
+                      Icons.help,
+                      Colors.purple,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 
@@ -224,34 +197,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 SimplePieChart(
                   title: 'Distribution par type',
                   data: [
-                    PieChartData(label: 'Incidents', value: _stats['incidents'] ?? 0, color: Colors.deepOrange),
-                    PieChartData(label: 'Réclamations', value: _stats['reclamations'] ?? 0, color: Colors.amber),
+                    PieChartData(label: 'Incidents', value: _stats['incidents'] ?? 0, color: Colors.red),
+                    PieChartData(label: 'Réclamations', value: _stats['reclamations'] ?? 0, color: Colors.orange),
                     PieChartData(label: 'Demandes', value: _stats['demandes'] ?? 0, color: Colors.purple),
                   ],
                   size: 150,
-                ),
-                const SizedBox(height: 16),
-                
-                // CARTES PAR TYPE
-                _buildStatCard(
-                  'Incidents',
-                  _stats['incidents']?.toString() ?? '0',
-                  Icons.bug_report,
-                  Colors.red,
-                ),
-                const SizedBox(height: 8),
-                _buildStatCard(
-                  'Réclamations',
-                  _stats['reclamations']?.toString() ?? '0',
-                  Icons.feedback,
-                  Colors.orange,
-                ),
-                const SizedBox(height: 8),
-                _buildStatCard(
-                  'Demandes',
-                  _stats['demandes']?.toString() ?? '0',
-                  Icons.help,
-                  Colors.blue,
                 ),
               ],
             ),
@@ -302,6 +252,55 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // CARTE STATISTIQUE COMPACTE POUR GRILLE
+  Widget _buildStatCardCompact(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // ICÔNE COLORÉE
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            
+            // VALEUR
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            
+            // TITRE
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

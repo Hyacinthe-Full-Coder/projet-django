@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../widgets/app_drawer.dart';
+import '../services/ticket_service.dart';
+import '../models/ticket.dart';
+import '../widgets/bottom_navigation_service.dart';
 import '../widgets/simple_pie_chart.dart';
 import 'create_user_screen.dart';
 import 'login_screen.dart';
 import 'assign_tickets_screen.dart';
+import 'statistics_screen.dart';
 
 // ÉCRAN TABLEAU DE BORD ADMINISTRATEUR
 class AdminDashboardScreen extends StatefulWidget {
@@ -21,6 +24,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
+  int _selectedIndex = 0; // 0: Dashboard, 1: Tickets, 2: Assigner, 3: Stats, 4: Utilisateurs
 
   // INITIALISATION
   @override
@@ -80,15 +84,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
 
-    // INTERFACE PRINCIPALE
+    // INTERFACE PRINCIPALE AVEC FOOTER
     return Scaffold(
-      // MENU LATÉRAL
-      drawer: AppDrawer(
-        role: 'ADMIN',
-        name: '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
-        onLogout: _logout,
-      ),
-      
       // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Dashboard Admin'),
@@ -102,94 +99,126 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ],
       ),
       
-      // CORPS PRINCIPAL
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadData,
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildWelcomeCard(),
-                      const SizedBox(height: 24),
-                      if (_dashboardData != null) ...[
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 1100;
+      // CORPS PRINCIPAL - SWITCH ENTRE VUES
+      body: _buildViewByIndex(_selectedIndex),
+      
+      // FOOTER DE NAVIGATION
+      bottomNavigationBar: BottomNavigationService(
+        role: 'ADMIN',
+        selectedIndex: _selectedIndex,
+        onNavigate: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
+    );
+  }
 
-                            return isWide
-                                ? Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        flex: 3,
-                                        child: Column(
-                                          children: [
-                                            _buildSummaryPanel(_dashboardData!),
-                                            const SizedBox(height: 16),
-                                            _buildActionPanel(),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        flex: 5,
-                                        child: _buildMainOverviewPanel(_dashboardData!),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        flex: 2,
-                                        child: _buildRightPanel(_dashboardData!),
-                                      ),
-                                    ],
-                                  )
-                                : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      _buildSummaryPanel(_dashboardData!),
-                                      const SizedBox(height: 16),
-                                      _buildMainOverviewPanel(_dashboardData!),
-                                      const SizedBox(height: 16),
-                                      _buildRightPanel(_dashboardData!),
-                                      const SizedBox(height: 16),
-                                      _buildActionPanel(),
-                                    ],
-                                  );
-                          },
-                        ),
+  // CONSTRUCTION DE LA VUE SELON L'INDEX
+  Widget _buildViewByIndex(int index) {
+    switch (index) {
+      case 0:
+        // DASHBOARD
+        return SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _loadData,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildWelcomeCard(),
                         const SizedBox(height: 24),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth >= 900) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        if (_dashboardData != null) ...[
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide = constraints.maxWidth >= 1100;
+
+                              return isWide
+                                  ? Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child: Column(
+                                            children: [
+                                              _buildSummaryPanel(_dashboardData!),
+                                              const SizedBox(height: 16),
+                                              _buildActionPanel(),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          flex: 5,
+                                          child: _buildMainOverviewPanel(_dashboardData!),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          flex: 2,
+                                          child: _buildRightPanel(_dashboardData!),
+                                        ),
+                                      ],
+                                    )
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildSummaryPanel(_dashboardData!),
+                                        const SizedBox(height: 16),
+                                        _buildMainOverviewPanel(_dashboardData!),
+                                        const SizedBox(height: 16),
+                                        _buildRightPanel(_dashboardData!),
+                                        const SizedBox(height: 16),
+                                        _buildActionPanel(),
+                                      ],
+                                    );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              if (constraints.maxWidth >= 900) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: _buildBottomLeftPanel(_dashboardData!)),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: _buildBottomRightPanel(_dashboardData!)),
+                                  ],
+                                );
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Expanded(child: _buildBottomLeftPanel(_dashboardData!)),
-                                  const SizedBox(width: 16),
-                                  Expanded(child: _buildBottomRightPanel(_dashboardData!)),
+                                  _buildBottomLeftPanel(_dashboardData!),
+                                  const SizedBox(height: 16),
+                                  _buildBottomRightPanel(_dashboardData!),
                                 ],
                               );
-                            }
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildBottomLeftPanel(_dashboardData!),
-                                const SizedBox(height: 16),
-                                _buildBottomRightPanel(_dashboardData!),
-                              ],
-                            );
-                          },
-                        ),
+                            },
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
               ),
-            ),
-        );
+            );
+      case 1:
+        // TOUS LES TICKETS
+        return _buildAllTicketsView();
+      case 2:
+        // ASSIGNER TICKETS
+        return const AssignTicketsScreen();
+      case 3:
+        // STATISTIQUES
+        return const StatisticsScreen();
+      case 4:
+        // CRÉER UTILISATEUR
+        return CreateUserScreen();
+      default:
+        return const Center(child: Text('Vue non trouvée'));
+    }
   }
 
   // CARTE DE BIENVENUE
@@ -661,5 +690,272 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
       ),
     );
+  }
+
+  // VUE TOUS LES TICKETS
+  Widget _buildAllTicketsView() {
+    final TicketService ticketService = TicketService();
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // TITRE
+            const Text(
+              'Tous les Tickets',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // RÉSUMÉ STATISTIQUES
+            if (_dashboardData != null) ...[
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 1.3,
+                children: [
+                  _buildStatCardCompact(
+                    'Ouverts',
+                    (_dashboardData?['tickets_by_status']['OUVERT'] ?? 0)
+                        .toString(),
+                    Icons.schedule,
+                    Colors.orange,
+                  ),
+                  _buildStatCardCompact(
+                    'En cours',
+                    (_dashboardData?['tickets_by_status']['EN_COURS'] ?? 0)
+                        .toString(),
+                    Icons.work,
+                    Colors.blue,
+                  ),
+                  _buildStatCardCompact(
+                    'Résolus',
+                    (_dashboardData?['tickets_by_status']['RESOLU'] ?? 0)
+                        .toString(),
+                    Icons.check_circle,
+                    Colors.green,
+                  ),
+                  _buildStatCardCompact(
+                    'Clos',
+                    (_dashboardData?['tickets_by_status']['CLOS'] ?? 0)
+                        .toString(),
+                    Icons.archive,
+                    Colors.grey,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // TICKETS RÉCENTS
+            FutureBuilder<List<Ticket>>(
+              future: ticketService.listerTickets(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Erreur: ${snapshot.error}',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  );
+                }
+
+                final tickets = snapshot.data ?? [];
+
+                if (tickets.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucun ticket',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: List.generate(
+                    tickets.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildSimpleTicketCard(tickets[index]),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // CARTE STATISTIQUE COMPACTE
+  Widget _buildStatCardCompact(
+      String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // CARTE TICKET SIMPLE
+  Widget _buildSimpleTicketCard(Ticket ticket) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // TITRE + STATUT
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    ticket.titre,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(ticket.status),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    ticket.status,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // DESCRIPTION
+            Text(
+              ticket.description,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // TYPE + PRIORITÉ
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Type: ${ticket.type}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  'Priorité: ${ticket.priorite}',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // COULEUR SELON STATUT
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'OUVERT':
+        return Colors.orange;
+      case 'EN_COURS':
+        return Colors.blue;
+      case 'RESOLU':
+        return Colors.green;
+      case 'CLOS':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
-import '../widgets/app_drawer.dart';
+import '../services/auth_service.dart';
+import '../widgets/bottom_navigation_service.dart';
+import 'login_screen.dart';
 
 // ÉCRAN DES NOTIFICATIONS
 class NotificationsScreen extends StatefulWidget {
@@ -23,6 +25,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   bool _isMarkingAll = false;
   late Future<void> _refreshTimer;
+  int _selectedIndex = 2; // Par défaut, onglet Notifications
 
   @override
   void initState() {
@@ -171,13 +174,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // MENU LATÉRAL
-      drawer: AppDrawer(
-        role: widget.role,
-        name: widget.name,
-      ),
-
-      // BARRE D'APPLICATION
+      // BARRE D'APPLICATION (pas de drawer)
       appBar: AppBar(
         title: const Text('Notifications'),
         backgroundColor: const Color(0xFF006743),
@@ -311,6 +308,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       },
                     ),
             ),
+      
+      // FOOTER DE NAVIGATION
+      bottomNavigationBar: BottomNavigationService(
+        role: widget.role,
+        selectedIndex: _selectedIndex,
+        onNavigate: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
     );
   }
 

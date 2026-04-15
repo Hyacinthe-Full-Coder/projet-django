@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 import '../services/ticket_service.dart';
-import '../widgets/app_drawer.dart';
 import '../widgets/ticket_card.dart';
+import '../widgets/bottom_navigation_service.dart';
 import 'ticket_detail_screen.dart';
 import 'create_ticket_screen.dart';
 import 'profile_screen.dart';
+import 'notifications_screen.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class TicketListScreen extends StatefulWidget {
   final String role;
@@ -19,8 +22,10 @@ class TicketListScreen extends StatefulWidget {
 
 class _TicketListScreenState extends State<TicketListScreen> {
   final _service = TicketService();
+  final _authService = AuthService();
   late Future<List<Ticket>> _futureTickets;
   String _filterStatus = 'TOUS';
+  int _selectedIndex = 1; // Par défaut, onglet Tickets
 
   // Statistiques
   Map<String, int> _stats = {
@@ -139,7 +144,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F2),
-      drawer: AppDrawer(role: widget.role, name: widget.name, onLogout: null),
+      // BARRE D'APPLICATION (pas de drawer)
       appBar: AppBar(
         title: const Text('Mes Tickets'),
         backgroundColor: const Color(0xFF006743),
@@ -294,6 +299,15 @@ class _TicketListScreenState extends State<TicketListScreen> {
         backgroundColor: const Color(0xFF006743),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      
+      // FOOTER DE NAVIGATION
+      bottomNavigationBar: BottomNavigationService(
+        role: widget.role,
+        selectedIndex: _selectedIndex,
+        onNavigate: (index) {
+          setState(() => _selectedIndex = index);
+        },
       ),
     );
   }

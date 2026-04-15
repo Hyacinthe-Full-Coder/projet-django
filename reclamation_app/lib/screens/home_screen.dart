@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'ticket_list_screen.dart';
+import 'citoyen_dashboard_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'technicien_dashboard_screen.dart';
 
@@ -60,10 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // PAR DÉFAUT : ÉCRAN DES TICKETS POUR CITOYENS
-    return TicketListScreen(
-      role: 'CITOYEN',
-      name: '${_userProfile?['first_name'] ?? 'Utilisateur'} ${_userProfile?['last_name'] ?? ''}',
-    );
+    // PAR DÉFAUT : DASHBOARD CITOYEN
+    return const CitoyenDashboardScreen();
   }
 }

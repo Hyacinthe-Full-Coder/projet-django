@@ -9,17 +9,17 @@ class TechnicienDashboardScreen extends StatefulWidget {
   const TechnicienDashboardScreen({super.key});
 
   @override
-  State<TechnicienDashboardScreen> createState() => _TechnicienDashboardScreenState();
+  State<TechnicienDashboardScreen> createState() =>
+      _TechnicienDashboardScreenState();
 }
 
 class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
-  
   // SERVICES ET DONNÉES
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
-  int _selectedIndex = 0;  // 0: Dashboard, 1: Liste des tickets
+  int _selectedIndex = 0; // 0: Dashboard, 1: Liste des tickets
 
   // INITIALISATION
   @override
@@ -40,9 +40,9 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -63,9 +63,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -75,28 +73,26 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
         name: '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
         onLogout: _logout,
       ),
-      
+
       // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Dashboard Technicien'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
-      
+
       // CORPS PRINCIPAL (SWITCH ENTRE VUES)
       body: _selectedIndex == 0
           ? _buildDashboardView()
           : TicketListScreen(
               role: 'TECHNICIEN',
-              name: '${_userProfile?['first_name'] ?? 'Technicien'} ${_userProfile?['last_name'] ?? ''}',
+              name:
+                  '${_userProfile?['first_name'] ?? 'Technicien'} ${_userProfile?['last_name'] ?? ''}',
             ),
-      
+
       // BARRE DE NAVIGATION INFÉRIEURE
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
@@ -108,10 +104,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Mes Tickets',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Mes Tickets'),
         ],
         onTap: (index) => setState(() => _selectedIndex = index),
       ),
@@ -120,103 +113,139 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
 
   // VUE TABLEAU DE BORD
   Widget _buildDashboardView() {
+    final myTickets =
+        (_dashboardData!['my_tickets'] as Map<String, dynamic>?) ?? {};
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // SECTION BIENVENUE
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF006743),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.support_agent,
-                    color: Colors.white,
-                    size: 40,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // SECTION BIENVENUE
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF006743),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Bienvenue Technicien',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.support_agent,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Bienvenue Technicien',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // SECTION STATISTIQUES
+                if (_dashboardData != null) ...[
+                  // TOTAL TICKETS ASSIGNÉS
+                  Center(
+                    child: _buildStatCard(
+                      'Total Tickets',
+                      (_dashboardData!['total_tickets_assignes'] ?? 0)
+                          .toString(),
+                      Icons.event_note,
+                      Colors.indigo,
+                      width: 140,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // TICKETS PAR STATUT
+                  const Text(
+                    'Mes Tickets par Statut',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Column(
+                      children: [
+                        _buildStatCard(
+                          'En cours',
+                          (myTickets['EN_COURS'] ?? 0).toString(),
+                          Icons.work_outline,
+                          Colors.blue,
+                          width: 140,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatCard(
+                          'Résolus',
+                          (myTickets['RESOLU'] ?? 0).toString(),
+                          Icons.check_circle,
+                          Colors.green,
+                          width: 140,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatCard(
+                          'Clos',
+                          (myTickets['CLOS'] ?? 0).toString(),
+                          Icons.archive,
+                          Colors.grey,
+                          width: 140,
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-            // SECTION STATISTIQUES
-            if (_dashboardData != null) ...[
-              // TOTAL TICKETS ASSIGNÉS
-              _buildStatCard(
-                'Tickets Assignés',
-                (_dashboardData!['total_tickets_assignes'] ?? 0).toString(),
-                Icons.assignment,
-                Colors.blue,
-              ),
-              const SizedBox(height: 16),
-
-              // TICKETS PAR STATUT
-              const Text(
-                'Mes Tickets par Statut',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildTicketStatsGrid(
-                (_dashboardData!['my_tickets'] as Map<String, dynamic>?) ?? {},
-              ),
-              const SizedBox(height: 24),
-
-              // TICKETS RÉCENTS
-              const Text(
-                'Tickets Récents',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (_dashboardData!['recent_tickets'] != null &&
-                  (_dashboardData!['recent_tickets'] as List).isNotEmpty)
-                _buildRecentTickets(_dashboardData!['recent_tickets'])
-              else
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Aucun ticket récent'),
+                  // TICKETS RÉCENTS
+                  const Text(
+                    'Tickets Récents',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-            ] else
-              const Center(
-                child: Text('Erreur lors du chargement des données'),
-              ),
-          ],
+                  const SizedBox(height: 12),
+                  if (_dashboardData!['recent_tickets'] != null &&
+                      (_dashboardData!['recent_tickets'] as List).isNotEmpty)
+                    _buildRecentTickets(_dashboardData!['recent_tickets'])
+                  else
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Aucun ticket récent'),
+                      ),
+                    ),
+                ] else
+                  const Center(
+                    child: Text('Erreur lors du chargement des données'),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -227,83 +256,43 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
-    return SizedBox(
-      height: 80,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          border: Border.all(color: color.withAlpha(180), width: 1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 10,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+    Color color, {
+    double width = double.infinity,
+  }) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        borderRadius: BorderRadius.circular(18),
       ),
-    );
-  }
-
-  // GRILLE DES STATISTIQUES PAR STATUT
-  Widget _buildTicketStatsGrid(Map<String, dynamic> stats) {
-    final colors = {
-      'EN_COURS': Colors.blue,
-      'RESOLU': Colors.green,
-      'CLOS': Colors.grey,
-    };
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 420;
-        final crossAxisCount = isNarrow ? 1 : 2;
-        final childAspectRatio = isNarrow ? 3.2 : 2.5;
-
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: childAspectRatio,
-          children: stats.entries.map((e) {
-            return _buildStatCard(
-              e.key,
-              e.value.toString(),
-              Icons.circle,
-              colors[e.key] ?? Colors.grey,
-            );
-          }).toList(),
-        );
-      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -355,7 +344,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                
+
                 // LIGNE TYPE + PRIORITÉ
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -373,10 +362,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
                     ),
                     Text(
                       'Priorité: ${ticket['priorite'] ?? ''}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),

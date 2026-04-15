@@ -3,11 +3,10 @@ import '../models/ticket.dart';
 import '../services/ticket_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/ticket_card.dart';
-import '../widgets/notification_badge.dart';
 import 'ticket_detail_screen.dart';
 import 'create_ticket_screen.dart';
+import 'profile_screen.dart';
 
-// ÉCRAN DE LISTE DES TICKETS
 class TicketListScreen extends StatefulWidget {
   final String role;
   final String name;
@@ -19,137 +18,274 @@ class TicketListScreen extends StatefulWidget {
 }
 
 class _TicketListScreenState extends State<TicketListScreen> {
-  
-  // SERVICES ET DONNÉES
   final _service = TicketService();
   late Future<List<Ticket>> _futureTickets;
   String _filterStatus = 'TOUS';
+  
+  // Statistiques
+  Map<String, int> _stats = {
+    'total': 0,
+    'incidents': 0,
+    'reclamations': 0,
+    'demandes': 0,
+  };
 
-  // INITIALISATION
   @override
   void initState() {
     super.initState();
     _charger();
   }
 
-  // CHARGEMENT DES TICKETS AVEC FILTRE
   void _charger() {
     setState(() {
       _futureTickets = _service.listerTickets(
         statut: _filterStatus == 'TOUS' ? null : _filterStatus,
       );
     });
+    _loadStats();
   }
 
-  // COULEUR SELON LE STATUT
-  Color _couleurStatus(String status) {
-    switch (status) {
-      case 'OUVERT':
-        return Colors.blue;
-      case 'EN_COURS':
-        return Colors.orange;
-      case 'RESOLU':
-        return Colors.green;
-      case 'CLOS':
-        return Colors.red;
-      default:
-        return Colors.black;
+  Future<void> _loadStats() async {
+    try {
+      final tickets = await _service.listerTickets();
+      setState(() {
+        _stats['total'] = tickets.length;
+        _stats['incidents'] = tickets.where((t) => t.type == 'INCIDENT').length;
+        _stats['reclamations'] = tickets.where((t) => t.type == 'RECLAMATION').length;
+        _stats['demandes'] = tickets.where((t) => t.type == 'DEMANDE').length;
+      });
+    } catch (e) {
+      // Silently fail
     }
   }
 
-  // CONSTRUCTION DE L'INTERFACE
+  Widget _buildStatCard(String label, int value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: color),
+            const SizedBox(height: 8),
+            Text(
+              value.toString(),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF263238),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF90A4AE),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, bool isActive) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _filterStatus = label == 'Tous' ? 'TOUS' : 
+                          (label == 'Ouvert' ? 'OUVERT' : 
+                          (label == 'En cours' ? 'EN_COURS' : 'RESOLU'));
+        });
+        _charger();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF006743) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : const Color(0xFF90A4AE),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // MENU LATÉRAL
+      backgroundColor: const Color(0xFFF2F6F2),
       drawer: AppDrawer(
         role: widget.role,
         name: widget.name,
         onLogout: null,
       ),
-      
-      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Mes Tickets'),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
-          // BOUTON FILTRE AVEC BADGE NOTIFICATION
-          NotificationBadge(
-            ticketService: _service,
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.filter_list),
-              onSelected: (val) {
-                setState(() {
-                  _filterStatus = val ?? 'TOUS';
-                });
-                _charger();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'TOUS', child: Text('Tous')),
-                const PopupMenuItem(value: 'OUVERT', child: Text('Ouvert')),
-                const PopupMenuItem(value: 'EN_COURS', child: Text('En Cours')),
-                const PopupMenuItem(value: 'RESOLU', child: Text('Résolu')),
-                const PopupMenuItem(value: 'CLOS', child: Text('Clos')),
-              ],
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Mon profil',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
             ),
           ),
         ],
       ),
-      
-      // CORPS PRINCIPAL
-      body: FutureBuilder<List<Ticket>>(
-        future: _futureTickets,
-        builder: (context, snapshot) {
-          
-          // ÉTAT CHARGEMENT
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          // ÉTAT ERREUR
-          if (snapshot.hasError) {
-            return Center(child: Text('Erreur: ${snapshot.error}'));
-          }
-          
-          final tickets = snapshot.data ?? [];
-          
-          // LISTE VIDE
-          if (tickets.isEmpty) {
-            return const Center(child: Text('Aucun ticket trouvé'));
-          }
-          
-          // LISTE DES TICKETS
-          return RefreshIndicator(
-            onRefresh: () async {
-              _charger();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: tickets.length,
-              itemBuilder: (_, i) => TicketCard(
-                ticket: tickets[i],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TicketDetailScreen(ticketId: tickets[i].id),
-                  ),
-                ).then((_) => _charger()),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // STATISTIQUES
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatCard(
+                  'Tous',
+                  _stats['total'] ?? 0,
+                  Icons.list_alt,
+                  const Color(0xFF006743),
+                ),
+                const SizedBox(width: 8),
+                _buildStatCard(
+                  'Incidents',
+                  _stats['incidents'] ?? 0,
+                  Icons.warning_amber_rounded,
+                  const Color(0xFFFFA500),
+                ),
+                const SizedBox(width: 8),
+                _buildStatCard(
+                  'Réclamations',
+                  _stats['reclamations'] ?? 0,
+                  Icons.receipt_long,
+                  const Color(0xFF9C27B0),
+                ),
+                const SizedBox(width: 8),
+                _buildStatCard(
+                  'Demandes',
+                  _stats['demandes'] ?? 0,
+                  Icons.help_outline,
+                  const Color(0xFF2196F3),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // ONGLETS DE FILTRAGE
+            Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTabButton('Tous', _filterStatus == 'TOUS'),
+                    const SizedBox(width: 12),
+                    _buildTabButton('Ouvert', _filterStatus == 'OUVERT'),
+                    const SizedBox(width: 12),
+                    _buildTabButton('En cours', _filterStatus == 'EN_COURS'),
+                    const SizedBox(width: 12),
+                    _buildTabButton('Résolus', _filterStatus == 'RESOLU'),
+                  ],
+                ),
               ),
             ),
-          );
-        },
+            const SizedBox(height: 16),
+
+            // TITRE SECTION
+            const Text(
+              'INCIDENTS RÉCENTS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF90A4AE),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // LISTE DES TICKETS
+            FutureBuilder<List<Ticket>>(
+              future: _futureTickets,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Erreur: ${snapshot.error}'));
+                }
+
+                final tickets = snapshot.data ?? [];
+
+                if (tickets.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        'Aucun ticket trouvé',
+                        style: TextStyle(
+                          color: Color(0xFF90A4AE),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: List.generate(
+                    tickets.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: TicketCard(
+                        ticket: tickets[index],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TicketDetailScreen(ticketId: tickets[index].id),
+                          ),
+                        ).then((_) => _charger()),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
-      
-      // BOUTON FLOTTANT CRÉATION
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => CreateTicketScreen()),
+          MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
         ).then((_) => _charger()),
-        label: const Text('Nouveau Ticket'),
-        icon: const Icon(Icons.add),
         backgroundColor: const Color(0xFF006743),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }

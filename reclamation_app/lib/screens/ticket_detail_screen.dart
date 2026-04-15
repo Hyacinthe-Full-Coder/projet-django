@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 import '../services/ticket_service.dart';
-import '../services/auth_service.dart';
 
 // ÉCRAN DÉTAIL D'UN TICKET
 class TicketDetailScreen extends StatefulWidget {
@@ -13,18 +12,15 @@ class TicketDetailScreen extends StatefulWidget {
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
-  
   // SERVICES
   final TicketService _ticketService = TicketService();
-  final AuthService _authService = AuthService();
-  
+
   // DONNÉES
   Ticket? _ticket;
-  Map<String, dynamic>? _userProfile;
   bool _isLoadingAction = false;
   bool _isLoadingInitial = true;
   String? _errorMessage;
-  List<Map<String, dynamic>> _techniciens = [];
+  final TextEditingController _commentController = TextEditingController();
 
   // INITIALISATION
   @override
@@ -40,19 +36,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         _isLoadingInitial = true;
         _errorMessage = null;
       });
-      
-      // Charger les 3 éléments en parallèle
-      final results = await Future.wait([
-        _ticketService.getTicket(widget.ticketId),
-        _authService.getUserProfile().then((p) => p ?? {}),
-        _ticketService.listerTechniciens(),
-      ]);
-      
+
+      _ticket = await _ticketService.getTicket(widget.ticketId);
       if (mounted) {
         setState(() {
-          _ticket = results[0] as Ticket;
-          _userProfile = results[1] as Map<String, dynamic>;
-          _techniciens = results[2] as List<Map<String, dynamic>>;
           _isLoadingInitial = false;
         });
       }
@@ -78,25 +65,30 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du rafraîchissement: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erreur lors du rafraîchissement: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
-  // CHANGER LE STATUT DU TICKET
-  Future<void> _changerStatut(String nouveauStatut) async {
-    if (_isLoadingAction) return;
-
+  // ENVOYER UN COMMENTAIRE
+  Future<void> _sendComment() async {
+    if (_commentController.text.trim().isEmpty || _isLoadingAction) return;
     setState(() => _isLoadingAction = true);
     try {
-      await _ticketService.changerStatus(widget.ticketId, nouveauStatut);
-      // Rafraîchir le ticket SANS recréer la Future
+      await _ticketService.commenter(
+        widget.ticketId,
+        _commentController.text.trim(),
+      );
+      _commentController.clear();
       await _refreshTicket();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Statut changé en $nouveauStatut')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Commentaire ajouté')));
       }
     } catch (e) {
       if (mounted) {
@@ -107,179 +99,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     } finally {
       setState(() => _isLoadingAction = false);
     }
-  }
-
-  // ASSIGNER UN TECHNICIEN
-  Future<void> _assignerTicket({int? technicienId, bool auto = false}) async {
-    if (_isLoadingAction) return;
-
-    setState(() => _isLoadingAction = true);
-    try {
-      await _ticketService.assignerTicket(widget.ticketId, technicienId: technicienId, auto: auto);
-      // Rafraîchir le ticket SANS recréer la Future
-      await _refreshTicket();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ticket assigné avec succès')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      setState(() => _isLoadingAction = false);
-    }
-  }
-
-  // AJOUTER UN COMMENTAIRE
-  void _ajouterCommentaire() {
-    final controllerCommentaire = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajouter un commentaire'),
-        content: TextField(
-          controller: controllerCommentaire,
-          decoration: const InputDecoration(
-            hintText: 'Votre commentaire...',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 4,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (controllerCommentaire.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Veuillez écrire un commentaire')),
-                );
-                return;
-              }
-              Navigator.pop(context);
-              
-              setState(() => _isLoadingAction = true);
-              try {
-                await _ticketService.commenter(widget.ticketId, controllerCommentaire.text);
-                // Rafraîchir le ticket SANS recréer la Future
-                await _refreshTicket();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Commentaire ajouté')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-                  );
-                }
-              } finally {
-                setState(() => _isLoadingAction = false);
-              }
-            },
-            child: const Text('Envoyer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // DIALOGUE CHANGEMENT DE STATUT
-  void _montrerDialogStatut() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Changer le statut'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('En cours'),
-              onTap: () {
-                Navigator.pop(context);
-                _changerStatut('EN_COURS');
-              },
-            ),
-            ListTile(
-              title: const Text('Résolu'),
-              onTap: () {
-                Navigator.pop(context);
-                _changerStatut('RESOLU');
-              },
-            ),
-            ListTile(
-              title: const Text('Clos'),
-              onTap: () {
-                Navigator.pop(context);
-                _changerStatut('CLOS');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // DIALOGUE ASSIGNATION
-  void _montrerDialogAssignation() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Assigner un technicien'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _assignerTicket(auto: true);
-              },
-              icon: const Icon(Icons.shuffle),
-              label: const Text('Assignation automatique'),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _techniciens.length,
-                itemBuilder: (context, index) {
-                  final technicien = _techniciens[index];
-                  return ListTile(
-                    title: Text('${technicien['first_name']} ${technicien['last_name']}'),
-                    subtitle: Text(technicien['email']),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _assignerTicket(technicienId: technicien['id']);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
-    );
   }
 
   // COULEUR SELON LE STATUT
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'OUVERT':
-        return Colors.blue;
+        return const Color(0xFF006743);
       case 'EN_COURS':
         return Colors.orange;
       case 'RESOLU':
@@ -289,6 +115,98 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  Widget _buildStatusStepper(String status) {
+    final isOuvert =
+        status == 'OUVERT' ||
+        status == 'EN_COURS' ||
+        status == 'RESOLU' ||
+        status == 'CLOS';
+    final isEnCours =
+        status == 'EN_COURS' || status == 'RESOLU' || status == 'CLOS';
+    final isResolu = status == 'RESOLU' || status == 'CLOS';
+
+    Widget step(String label, IconData icon, bool active) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: active ? const Color(0xFF006743) : Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: active ? Colors.white : Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: active ? const Color(0xFF006743) : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: step('Ouvert', Icons.check_circle, isOuvert)),
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  height: 2,
+                  color: Colors.grey.shade300,
+                  width: double.infinity,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          Expanded(child: step('En cours', Icons.autorenew, isEnCours)),
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  height: 2,
+                  color: Colors.grey.shade300,
+                  width: double.infinity,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          Expanded(child: step('Résolu', Icons.check, isResolu)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
   }
 
   // COULEUR SELON LA PRIORITÉ
@@ -373,7 +291,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final ticket = _ticket!;
 
     return Scaffold(
-      // BARRE D'APPLICATION
       appBar: AppBar(
         title: const Text('Détails du ticket'),
         backgroundColor: const Color(0xFF006743),
@@ -385,265 +302,299 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ),
         ],
       ),
-      
-      // CORPS PRINCIPAL
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // TITRE
-                Text(
-                  ticket.titre,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 16),
-
-                // STATUT + PRIORITÉ (BADGES)
-                Row(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(ticket.status),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        ticket.status,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    _buildStatusStepper(ticket.status),
+                    const SizedBox(height: 20),
+                    Text(
+                      ticket.titre,
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      ticket.dateCreation,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getPriorityColor(ticket.priorite),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        ticket.priorite,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // INFORMATIONS PRINCIPALES
-                _buildInfoCard('Type', ticket.type, Icons.category),
-                const SizedBox(height: 12),
-                _buildInfoCard('Auteur', ticket.auteurNom, Icons.person),
-                const SizedBox(height: 12),
-                if (ticket.assigneA != null)
-                  _buildInfoCard('Assigné à', ticket.assigneA!, Icons.assignment_ind),
-                if (ticket.assigneA != null) const SizedBox(height: 12),
-                _buildInfoCard('Date de création', ticket.dateCreation, Icons.calendar_today),
-                const SizedBox(height: 20),
-
-                // DESCRIPTION
-                Text(
-                  'Description',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    ticket.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // SECTION ACTIONS
-                if (_userProfile != null && (_userProfile!['role'] == 'TECHNICIEN' || _userProfile!['role'] == 'ADMIN')) ...[
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 420;
-                      if (isNarrow) {
-                        // VERSION VERTICALE POUR ÉCRANS ÉTROITS
-                        return Column(
-                          children: [
-                            // BOUTON CHANGER STATUT
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null))
-                                    ? null
-                                    : _montrerDialogStatut,
-                                icon: _isLoadingAction
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(Icons.edit),
-                                label: const Text('Changer statut'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF006743),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(
+                              ticket.status,
+                            ).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            ticket.status,
+                            style: TextStyle(
+                              color: _getStatusColor(ticket.status),
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 12),
-
-                            // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
-                            if (_userProfile!['role'] == 'ADMIN')
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: _techniciens.isEmpty ? null : _montrerDialogAssignation,
-                                  icon: const Icon(Icons.assignment_ind),
-                                  label: const Text('Assigner'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      } else {
-                        // VERSION HORIZONTALE POUR ÉCRANS LARGES
-                        return Row(
-                          children: [
-                            // BOUTON CHANGER STATUT
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: (_isLoadingAction || (_userProfile!['role'] == 'TECHNICIEN' && ticket.assigneAId == null))
-                                    ? null
-                                    : _montrerDialogStatut,
-                                icon: _isLoadingAction
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Icon(Icons.edit),
-                                label: const Text('Changer statut'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF006743),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-
-                            // BOUTON ASSIGNER (ADMIN UNIQUEMENT)
-                            if (_userProfile!['role'] == 'ADMIN')
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: _techniciens.isEmpty ? null : _montrerDialogAssignation,
-                                  icon: const Icon(Icons.assignment_ind),
-                                  label: const Text('Assigner'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                
-                // BOUTON COMMENTER
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoadingAction ? null : _ajouterCommentaire,
-                        icon: const Icon(Icons.comment),
-                        label: const Text('Commenter'),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // SECTION COMMENTAIRES
-                if (ticket.commentaires.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  Text(
-                    'Commentaires',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: ticket.commentaires.length,
-                    itemBuilder: (context, index) {
-                      final commentaire = ticket.commentaires[index];
-                      final auteur = commentaire['auteur'] as Map<String, dynamic>?;
-                      final auteurNom = auteur != null
-                          ? '${auteur['first_name']} ${auteur['last_name']}'
-                          : 'Inconnu';
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    auteurNom,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    commentaire['date'] ?? '',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                commentaire['contenu'] ?? '',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ],
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getPriorityColor(
+                              ticket.priorite,
+                            ).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            ticket.priorite,
+                            style: TextStyle(
+                              color: _getPriorityColor(ticket.priorite),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ticket.description,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                          ),
+                          const SizedBox(height: 18),
+                          _buildInfoCard('Type', ticket.type, Icons.category),
+                          const SizedBox(height: 12),
+                          _buildInfoCard(
+                            'Auteur',
+                            ticket.auteurNom,
+                            Icons.person,
+                          ),
+                          if (ticket.assigneA != null) ...[
+                            const SizedBox(height: 12),
+                            _buildInfoCard(
+                              'Assigné à',
+                              ticket.assigneA!,
+                              Icons.assignment_ind,
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          _buildInfoCard(
+                            'Date de création',
+                            ticket.dateCreation,
+                            Icons.calendar_today,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Commentaires',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (ticket.commentaires.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Colors.grey,
+                              size: 24,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Aucun commentaire pour le moment.',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Utilisez le champ ci-dessous pour lancer l\'échange.',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: ticket.commentaires.length,
+                        itemBuilder: (context, index) {
+                          final commentaire = ticket.commentaires[index];
+                          final auteur =
+                              commentaire['auteur'] as Map<String, dynamic>?;
+                          final auteurNom = auteur != null
+                              ? '${auteur['first_name']} ${auteur['last_name']}'
+                              : 'Inconnu';
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      auteurNom,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      commentaire['date'] ?? '',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  commentaire['contenu'] ?? '',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 120),
+                  ],
+                ),
+              ),
             ),
           ),
-          // OVERLAY DE CHARGEMENT LORS DES ACTIONS
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, -8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Ajouter un commentaire...',
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: _isLoadingAction ? null : _sendComment,
+                    child: Container(
+                      height: 52,
+                      width: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF006743),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isLoadingAction ? Icons.hourglass_top : Icons.send,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           if (_isLoadingAction)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.3),
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                color: Colors.black.withOpacity(0.18),
+                child: const Center(child: CircularProgressIndicator()),
               ),
             ),
         ],

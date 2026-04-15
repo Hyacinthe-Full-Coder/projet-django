@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../screens/admin_dashboard_screen.dart';
 import '../screens/technicien_dashboard_screen.dart';
 import '../screens/ticket_list_screen.dart';
@@ -7,7 +8,9 @@ import '../screens/create_ticket_screen.dart';
 import '../screens/assign_tickets_screen.dart';
 import '../screens/create_user_screen.dart';
 import '../screens/statistics_screen.dart';
+import '../screens/notifications_screen.dart';
 import '../screens/login_screen.dart';
+import 'notification_badge.dart';
 
 // MENU LATÉRAL DE NAVIGATION
 // Affiche différentes options selon le rôle de l'utilisateur (ADMIN, TECHNICIEN, CITOYEN)
@@ -54,6 +57,7 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
+              _buildNotificationsTile(context),
               ListTile(
                 leading: const Icon(Icons.list),
                 title: const Text('Mes Tickets'),
@@ -118,6 +122,7 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
+              _buildNotificationsTile(context),
               ListTile(
                 leading: const Icon(Icons.list),
                 title: const Text('Mes Tickets'),
@@ -176,6 +181,7 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
+              _buildNotificationsTile(context),
             ],
             
             const Spacer(),
@@ -200,6 +206,29 @@ class AppDrawer extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // MÉTHODE POUR CONSTRUIRE LE TILE DES NOTIFICATIONS AVEC BADGE
+  Widget _buildNotificationsTile(BuildContext context) {
+    return ListTile(
+      leading: NotificationBadge(
+        child: const Icon(Icons.notifications),
+        service: NotificationService(),
+      ),
+      title: const Text('Notifications'),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NotificationsScreen(
+              role: role,
+              name: name,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -98,6 +98,46 @@ class HistoriqueStatut(models.Model):
     class Meta:
         ordering = ['-date_changement']        # Tri par date décroissante (les plus récents d'abord)
 
+
+# MODÈLE DES NOTIFICATIONS
+class Notification(models.Model):
+
+    # CHOIX ÉNUMÉRÉS (ENUMS)
+    # Définit les types de notifications disponibles
+    class TypeNotification(models.TextChoices):
+        NOUVELLEMENT_ASSIGNE = 'NOUVELLEMENT_ASSIGNE', 'Nouveau ticket assigné'
+        STATUT_CHANGE = 'STATUT_CHANGE', 'Changement de statut'
+        NOUVEAU_COMMENTAIRE = 'NOUVEAU_COMMENTAIRE', 'Nouveau commentaire'
+        TICKET_RESOLU = 'TICKET_RESOLU', 'Ticket résolu'
+        TICKET_CLOS = 'TICKET_CLOS', 'Ticket clos'
+        SYSTEME = 'SYSTEME', 'Notification système'
+
+    # RELATIONS
+    destinataire = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    createur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications_creees')
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='notifications')
+
+    # CHAMPS DE CONTENU
+    type_notification = models.CharField(max_length=20, choices=TypeNotification.choices)
+    titre = models.CharField(max_length=200)
+    message = models.TextField()
+    donnees_supplementaires = models.JSONField(null=True, blank=True)  # Pour stocker des données supplémentaires (ex: ancien/nouveau statut)
+
+    # CHAMPS DE GESTION
+    est_lue = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    # CONFIGURATION MÉTA
+    class Meta:
+        ordering = ['-date_creation']
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+
+    # MÉTHODES
+    def __str__(self):
+        """Représentation textuelle de la notification"""
+        return f"[{self.type_notification}] {self.titre} - {self.destinataire}"
+
     # MÉTHODES
     def __str__(self):
         """Représentation textuelle du changement de statut"""

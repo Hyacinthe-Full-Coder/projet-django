@@ -6,8 +6,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import models
 
-from .models import Ticket, Commentaire, HistoriqueStatut
-from .serializers import (TicketSerializer, CommentaireSerializer, TicketListSerializer, UserLightSerializer)
+from .models import Ticket, Commentaire, HistoriqueStatut, Notification
+from .serializers import (TicketSerializer, CommentaireSerializer, TicketListSerializer, UserLightSerializer, NotificationSerializer)
 from .permissions import IsAuteurOrReadOnly, IsTechnicienOrReadOnly, IsAdminOrReadOnly
 from accounts.models import CustomUser
 
@@ -75,6 +75,56 @@ class TicketViewSet(viewsets.ModelViewSet):
             nouveau_statut=nouveau_statut,
             modifie_par=request.user
         )
+
+        # CRÉATION DES NOTIFICATIONS
+        # Notification pour l'auteur du ticket (si différent du modificateur)
+        if ticket.auteur != request.user:
+            creer_notification(
+                destinataire=ticket.auteur,
+                type_notification=Notification.TypeNotification.STATUT_CHANGE,
+                titre=f"Statut de votre ticket modifié",
+                message=f"Le statut de votre ticket '{ticket.titre}' est passé de '{ancien_statut}' à '{nouveau_statut}'.",
+                createur=request.user,
+                ticket=ticket,
+                donnees_supplementaires={'ancien_statut': ancien_statut, 'nouveau_statut': nouveau_statut}
+            )
+
+        # Notification pour le technicien assigné (si différent du modificateur)
+        if ticket.assigne_a and ticket.assigne_a != request.user:
+            creer_notification(
+                destinataire=ticket.assigne_a,
+                type_notification=Notification.TypeNotification.STATUT_CHANGE,
+                titre=f"Statut du ticket modifié",
+                message=f"Le statut du ticket '{ticket.titre}' assigné à vous est passé de '{ancien_statut}' à '{nouveau_statut}'.",
+                createur=request.user,
+                ticket=ticket,
+                donnees_supplementaires={'ancien_statut': ancien_statut, 'nouveau_statut': nouveau_statut}
+            )
+
+        # Notification spéciale pour résolution
+        if nouveau_statut == Ticket.Statut.RESOLU:
+            if ticket.auteur != request.user:
+                creer_notification(
+                    destinataire=ticket.auteur,
+                    type_notification=Notification.TypeNotification.TICKET_RESOLU,
+                    titre=f"Votre ticket a été résolu",
+                    message=f"Le ticket '{ticket.titre}' a été marqué comme résolu.",
+                    createur=request.user,
+                    ticket=ticket
+                )
+
+        # Notification spéciale pour clôture
+        if nouveau_statut == Ticket.Statut.CLOS:
+            if ticket.auteur != request.user:
+                creer_notification(
+                    destinataire=ticket.auteur,
+                    type_notification=Notification.TypeNotification.TICKET_CLOS,
+                    titre=f"Votre ticket a été clos",
+                    message=f"Le ticket '{ticket.titre}' a été clos et archivé.",
+                    createur=request.user,
+                    ticket=ticket
+                )
+
         return Response(TicketSerializer(ticket, context={'request': request}).data)
 
     # ACTION : AJOUTER UN COMMENTAIRE
@@ -83,7 +133,31 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket = self.get_object()
         serializer = CommentaireSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(auteur=request.user, ticket=ticket)
+            commentaire = serializer.save(auteur=request.user, ticket=ticket)
+
+            # CRÉATION DE NOTIFICATIONS
+            # Notification pour l'auteur du ticket (si différent du commentateur)
+            if ticket.auteur != request.user:
+                creer_notification(
+                    destinataire=ticket.auteur,
+                    type_notification=Notification.TypeNotification.NOUVEAU_COMMENTAIRE,
+                    titre=f"Nouveau commentaire sur votre ticket",
+                    message=f"Un nouveau commentaire a été ajouté à votre ticket '{ticket.titre}'.",
+                    createur=request.user,
+                    ticket=ticket
+                )
+
+            # Notification pour le technicien assigné (si différent du commentateur)
+            if ticket.assigne_a and ticket.assigne_a != request.user:
+                creer_notification(
+                    destinataire=ticket.assigne_a,
+                    type_notification=Notification.TypeNotification.NOUVEAU_COMMENTAIRE,
+                    titre=f"Nouveau commentaire sur un ticket",
+                    message=f"Un nouveau commentaire a été ajouté au ticket '{ticket.titre}' qui vous est assigné.",
+                    createur=request.user,
+                    ticket=ticket
+                )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -118,6 +192,17 @@ class TicketViewSet(viewsets.ModelViewSet):
             ticket.assigne_a = technicien
 
         ticket.save()
+
+        # CRÉATION DE NOTIFICATION POUR LE TECHNICIEN
+        creer_notification(
+            destinataire=technicien,
+            type_notification=Notification.TypeNotification.NOUVELLEMENT_ASSIGNE,
+            titre=f"Nouveau ticket assigné",
+            message=f"Le ticket '{ticket.titre}' vous a été assigné.",
+            createur=request.user,
+            ticket=ticket
+        )
+
         return Response(TicketSerializer(ticket, context={'request': request}).data)
 
     # ACTION : TABLEAU DE BORD STATISTIQUE
@@ -214,3 +299,56 @@ class TechnicienViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.filter(role='TECHNICIEN')
     serializer_class = UserLightSerializer
     permission_classes = [IsAuthenticated]
+
+
+# FONCTIONS UTILITAIRES POUR LES NOTIFICATIONS
+def creer_notification(destinataire, type_notification, titre, message, createur=None, ticket=None, donnees_supplementaires=None):
+    """
+    Fonction utilitaire pour créer une notification
+    """
+    return Notification.objects.create(
+        destinataire=destinataire,
+        type_notification=type_notification,
+        titre=titre,
+        message=message,
+        createur=createur,
+        ticket=ticket,
+        donnees_supplementaires=donnees_supplementaires
+    )
+
+
+# VIEWSET DES NOTIFICATIONS
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les notifications des utilisateurs
+    """
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['est_lue', 'type_notification']
+    ordering_fields = ['date_creation', 'est_lue']
+
+    def get_queryset(self):
+        """Retourne uniquement les notifications de l'utilisateur connecté"""
+        return Notification.objects.filter(destinataire=self.request.user)
+
+    # ACTION : MARQUER UNE NOTIFICATION COMME LUE
+    @action(detail=True, methods=['patch'])
+    def marquer_lue(self, request, pk=None):
+        notification = self.get_object()
+        notification.est_lue = True
+        notification.save()
+        return Response(NotificationSerializer(notification).data)
+
+    # ACTION : MARQUER TOUTES LES NOTIFICATIONS COMME LUES
+    @action(detail=False, methods=['patch'])
+    def marquer_toutes_lues(self, request):
+        notifications = self.get_queryset().filter(est_lue=False)
+        notifications.update(est_lue=True)
+        return Response({'detail': f'{notifications.count()} notifications marquées comme lues'})
+
+    # ACTION : COMPTER LES NOTIFICATIONS NON LUES
+    @action(detail=False, methods=['get'])
+    def compter_non_lues(self, request):
+        count = self.get_queryset().filter(est_lue=False).count()
+        return Response({'non_lues': count})

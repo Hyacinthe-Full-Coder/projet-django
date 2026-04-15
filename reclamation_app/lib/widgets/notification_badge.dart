@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../services/ticket_service.dart';
+import '../services/notification_service.dart';
 
-// BADGE DE NOTIFICATION POUR TICKETS OUVERTS
-// Affiche un indicateur rouge avec le nombre de tickets ouverts non lus
+// BADGE DE NOTIFICATION POUR NOTIFICATIONS NON LUES
+// Affiche un indicateur rouge avec le nombre de notifications non lues
 class NotificationBadge extends StatefulWidget {
-  final Widget child;           // Widget enfant (bouton filtre)
-  final TicketService ticketService;  // Service pour récupérer les tickets
+  final Widget child;           // Widget enfant (icône)
+  final NotificationService? service;  // Service pour récupérer les notifications (optionnel)
 
   const NotificationBadge({
     super.key,
     required this.child,
-    required this.ticketService,
+    this.service,
   });
 
   @override
@@ -19,25 +19,44 @@ class NotificationBadge extends StatefulWidget {
 
 class _NotificationBadgeState extends State<NotificationBadge> {
   int _unreadCount = 0;
+  NotificationService? _service;
 
   // INITIALISATION
   @override
   void initState() {
     super.initState();
-    _checkUnreadTickets();
+    _service = widget.service ?? NotificationService();
+    _checkUnreadNotifications();
   }
 
-  // VÉRIFICATION DES TICKETS OUVERTS
-  Future<void> _checkUnreadTickets() async {
+  // VÉRIFICATION DES NOTIFICATIONS NON LUES
+  Future<void> _checkUnreadNotifications() async {
+    if (_service == null) return;
+
     try {
-      final tickets = await widget.ticketService.listerTickets(statut: 'OUVERT');
-      // Note : les tickets ouverts sont considérés comme non lus
-      // Dans une version réelle, il faudrait comparer avec la date de dernière lecture
-      setState(() {
-        _unreadCount = tickets.length;
-      });
+      final count = await _service!.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
     } catch (e) {
       // Erreur silencieuse pour ne pas casser l'interface
+      if (mounted) {
+        setState(() {
+          _unreadCount = 0;
+        });
+      }
+    }
+  }
+
+  // MISE À JOUR PÉRIODIQUE
+  @override
+  void didUpdateWidget(NotificationBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.service != oldWidget.service) {
+      _service = widget.service ?? NotificationService();
+      _checkUnreadNotifications();
     }
   }
 
@@ -46,9 +65,9 @@ class _NotificationBadgeState extends State<NotificationBadge> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // WIDGET ENFANT (icône filtre)
+        // WIDGET ENFANT (icône)
         widget.child,
-        
+
         // BADGE DE NOTIFICATION (si > 0)
         if (_unreadCount > 0)
           Positioned(
@@ -65,7 +84,7 @@ class _NotificationBadgeState extends State<NotificationBadge> {
                 minHeight: 20,
               ),
               child: Text(
-                _unreadCount.toString(),
+                _unreadCount > 99 ? '99+' : _unreadCount.toString(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -77,5 +96,11 @@ class _NotificationBadgeState extends State<NotificationBadge> {
           ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _service?.dispose();
+    super.dispose();
   }
 }

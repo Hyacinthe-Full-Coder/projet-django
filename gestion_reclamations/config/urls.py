@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from tickets.views import TicketViewSet, TechnicienViewSet
+from tickets.views import TicketViewSet, TechnicienViewSet, NotificationViewSet
 from accounts.views import EmailTokenObtainPairView, RegisterView, ProfileView, CreateUserView
 
 
@@ -10,6 +10,7 @@ from accounts.views import EmailTokenObtainPairView, RegisterView, ProfileView, 
 Router = DefaultRouter()
 Router.register(r'tickets', TicketViewSet, basename='ticket')      # Endpoints pour les tickets
 Router.register(r'techniciens', TechnicienViewSet, basename='technicien')  # Endpoints pour les techniciens
+Router.register(r'notifications', NotificationViewSet, basename='notification')  # Endpoints pour les notifications
 
 
 # DÉFINITION DES ROUTES URL

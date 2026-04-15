@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Commentaire, HistoriqueStatut, Ticket
+from .models import Commentaire, HistoriqueStatut, Ticket, Notification
 
 
 # ADMINISTRATION DES TICKETS 
@@ -89,4 +89,50 @@ class HistoriqueStatutAdmin(admin.ModelAdmin):
     list_filter = (
         'ancien_statut',      # Filtre par statut de départ
         'nouveau_statut'      # Filtre par statut d'arrivée
+    )
+
+
+# ADMINISTRATION DES NOTIFICATIONS
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    """
+    Configuration de l'affichage des notifications dans l'administration.
+    Permet de gérer et surveiller les notifications envoyées aux utilisateurs.
+    """
+
+    # COLONNES AFFICHÉES
+    list_display = (
+        'destinataire',
+        'type_notification',
+        'titre',
+        'est_lue',
+        'date_creation'
+    )
+
+    # FILTRES LATÉRAUX
+    list_filter = (
+        'type_notification',
+        'est_lue',
+        'date_creation'
+    )
+
+    # CHAMPS RECHERCHABLES
+    search_fields = (
+        'destinataire__email',
+        'destinataire__first_name',
+        'destinataire__last_name',
+        'titre',
+        'message'
+    )
+
+    # CHAMPS EN LECTURE SEULE
+    readonly_fields = (
+        'date_creation',
+    )
+
+    # OPTIMISATION DES PERFORMANCES
+    raw_id_fields = (
+        'destinataire',
+        'createur',
+        'ticket'
     )

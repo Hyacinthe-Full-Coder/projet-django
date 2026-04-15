@@ -77,7 +77,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         )
 
         # CRÉATION DES NOTIFICATIONS
-        # Notification pour l'auteur du ticket (si différent du modificateur)
+        # Notification pour l'auteur du ticket (TOUJOURS, sauf si lui-même change le statut)
         if ticket.auteur != request.user:
             creer_notification(
                 destinataire=ticket.auteur,

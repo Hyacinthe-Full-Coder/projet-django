@@ -22,7 +22,14 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        // Gérer les deux formats possibles : avec/sans pagination
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data is Map && data.containsKey('results')) {
+          return List<Map<String, dynamic>>.from(data['results']);
+        } else {
+          return List<Map<String, dynamic>>.from(data);
+        }
       } else {
         throw Exception('Erreur lors de la récupération des notifications');
       }

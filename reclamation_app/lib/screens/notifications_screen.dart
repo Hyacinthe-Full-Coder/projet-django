@@ -22,11 +22,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
   bool _isMarkingAll = false;
+  late Future<void> _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadNotifications();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    // Arrêter le minuteur de rafraîchissement automatique
+    super.dispose();
+  }
+
+  // DÉMARRER LE RAFRAÎCHISSEMENT AUTOMATIQUE TOUTES LES 5 SECONDES
+  void _startAutoRefresh() {
+    Future.doWhile(() async {
+      if (!mounted) return false;
+      await Future.delayed(const Duration(seconds: 5));
+      if (mounted) {
+        _loadNotifications();
+      }
+      return mounted;
+    });
   }
 
   // CHARGER LES NOTIFICATIONS

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 import '../services/ticket_service.dart';
+import '../services/auth_service.dart';
 
 // ÉCRAN DÉTAIL D'UN TICKET
 class TicketDetailScreen extends StatefulWidget {
@@ -14,19 +15,36 @@ class TicketDetailScreen extends StatefulWidget {
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
   // SERVICES
   final TicketService _ticketService = TicketService();
+  final AuthService _authService = AuthService();
 
   // DONNÉES
   Ticket? _ticket;
   bool _isLoadingAction = false;
   bool _isLoadingInitial = true;
   String? _errorMessage;
+  String? _userRole;
   final TextEditingController _commentController = TextEditingController();
 
   // INITIALISATION
   @override
   void initState() {
     super.initState();
+    _loadUserRole();
     _loadInitialData();
+  }
+
+  // CHARGER LE RÔLE DE L'UTILISATEUR
+  Future<void> _loadUserRole() async {
+    try {
+      final profile = await _authService.getUserProfile();
+      if (mounted && profile != null) {
+        setState(() {
+          _userRole = profile['role'];
+        });
+      }
+    } catch (e) {
+      // Silently fail
+    }
   }
 
   // CHARGER TOUTES LES DONNÉES INITIALES
@@ -38,6 +56,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       });
 
       _ticket = await _ticketService.getTicket(widget.ticketId);
+      
       if (mounted) {
         setState(() {
           _isLoadingInitial = false;
@@ -85,10 +104,43 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       );
       _commentController.clear();
       await _refreshTicket();
+      
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Commentaire ajouté')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      setState(() => _isLoadingAction = false);
+    }
+  }
+
+  // CHANGER LE STATUT SANS AFFICHER DE MESSAGE (AUTOMATIQUE)
+  Future<void> _changeStatusSilent(String newStatus) async {
+    try {
+      await _ticketService.changerStatus(widget.ticketId, newStatus);
+      await _refreshTicket();
+    } catch (e) {
+      // Silently fail - pas de notification pour les changements automatiques
+    }
+  }
+
+  // CHANGER LE STATUT MANUELLEMENT (AVEC MESSAGE)
+  Future<void> _changeStatus(String newStatus) async {
+    setState(() => _isLoadingAction = true);
+    try {
+      await _ticketService.changerStatus(widget.ticketId, newStatus);
+      await _refreshTicket();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Statut modifié avec succès')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -426,6 +478,138 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    
+                    // SECTION GESTION DU STATUT (POUR TECHNICIEN/ADMIN)
+                    if (_userRole == 'TECHNICIEN' || _userRole == 'ADMIN') ...[
+                      Text(
+                        'Gérer le statut du ticket',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // BOUTON RÉSOLU SPÉCIAL (BIEN VISIBLE)
+                      if (ticket.status != 'RESOLU' && ticket.status != 'CLOS')
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isLoadingAction ? null : () => _changeStatus('RESOLU'),
+                              borderRadius: BorderRadius.circular(18),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isLoadingAction ? Icons.hourglass_top : Icons.check_circle,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      _isLoadingAction ? 'Mise à jour...' : 'Marquer comme RÉSOLU',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.grey.shade600,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Ticket déjà résolu',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // GRILLE DE SÉLECTION DES STATUTS
+                      Text(
+                        'Ou choisir le statut manuellement',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: GridView.count(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            _buildStatusButtonEnhanced('OUVERT', ticket.status),
+                            _buildStatusButtonEnhanced('EN_COURS', ticket.status),
+                            _buildStatusButtonEnhanced('RESOLU', ticket.status),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    
                     Text(
                       'Commentaires',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -638,6 +822,121 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // BOUTON DE CHANGEMENT DE STATUT (SIMPLE)
+  Widget _buildStatusButton(String status, String currentStatus) {
+    final isActive = status == currentStatus;
+    final isLoading = _isLoadingAction;
+    
+    return ElevatedButton(
+      onPressed: isActive || isLoading ? null : () => _changeStatus(status),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isActive ? const Color(0xFF006743) : Colors.grey.shade200,
+        foregroundColor: isActive ? Colors.white : Colors.grey.shade700,
+        disabledBackgroundColor: Colors.grey.shade200,
+        disabledForegroundColor: Colors.grey.shade500,
+      ),
+      child: Text(status),
+    );
+  }
+
+  // BOUTON DE CHANGEMENT DE STATUT (AMÉLIORÉ - GRILLE - COMPACT)
+  Widget _buildStatusButtonEnhanced(String status, String currentStatus) {
+    final isActive = status == currentStatus;
+    final isLoading = _isLoadingAction;
+    
+    // Couleurs selon le statut
+    Color getStatusColor(String s) {
+      switch (s) {
+        case 'OUVERT':
+          return Colors.blue;
+        case 'EN_COURS':
+          return Colors.orange;
+        case 'RESOLU':
+          return Colors.green;
+        case 'CLOS':
+          return Colors.grey;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    IconData getStatusIcon(String s) {
+      switch (s) {
+        case 'OUVERT':
+          return Icons.inbox;
+        case 'EN_COURS':
+          return Icons.work_outline;
+        case 'RESOLU':
+          return Icons.check_circle_outline;
+        case 'CLOS':
+          return Icons.archive_outlined;
+        default:
+          return Icons.help;
+      }
+    }
+
+    final statusColor = getStatusColor(status);
+    final statusIcon = getStatusIcon(status);
+
+    return GestureDetector(
+      onTap: isActive || isLoading ? null : () => _changeStatus(status),
+      child: Card(
+        elevation: isActive ? 3 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: isActive ? statusColor : Colors.grey.shade300,
+            width: isActive ? 2 : 1,
+          ),
+        ),
+        color: isActive ? statusColor.withOpacity(0.1) : Colors.white,
+        child: Container(
+          decoration: isActive
+              ? BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: statusColor,
+                      width: 2,
+                    ),
+                  ),
+                )
+              : null,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                statusIcon,
+                color: isActive ? statusColor : Colors.grey.shade400,
+                size: 20,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                status,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  color: isActive ? statusColor : Colors.grey.shade700,
+                ),
+              ),
+              if (isActive) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Actuel',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: statusColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ]
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -128,7 +128,7 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
     return RefreshIndicator(
       onRefresh: () async => _charger(forceRefresh: true),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -142,11 +142,11 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
             // STATISTIQUES EN GRILLE
             GridView.count(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.3,
+              childAspectRatio: 1.5,
               children: [
                 _buildStatCardCompact(
                   'Total',

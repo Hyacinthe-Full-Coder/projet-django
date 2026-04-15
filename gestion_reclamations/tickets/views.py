@@ -299,6 +299,7 @@ class TechnicienViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.filter(role='TECHNICIEN')
     serializer_class = UserLightSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Désactiver la pagination pour retourner la liste complète
 
 
 # FONCTIONS UTILITAIRES POUR LES NOTIFICATIONS

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/ticket_service.dart';
 
 // ÉCRAN DE CRÉATION D'UTILISATEUR (ADMIN)
 class CreateUserScreen extends StatefulWidget {
@@ -61,6 +62,9 @@ class _CreateUserScreenState extends State<CreateUserScreen> {
 
       if (result['success'] == true) {
         setState(() => _success = result['message']);
+
+        // INVALIDER LE CACHE DES TECHNICIENS (IMPORTANT)
+        TicketService.clearTechniciensCache();
 
         // RÉINITIALISATION DU FORMULAIRE
         _formKey.currentState!.reset();

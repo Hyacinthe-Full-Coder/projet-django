@@ -111,28 +111,34 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
   }
 
   // AFFICHAGE DU DIALOGUE D'ASSIGNATION
-  void _showAssignDialog(Ticket ticket) {
+  Future<void> _showAssignDialog(Ticket ticket) async {
     // Réinitialiser la recherche et rafraîchir les techniciens
     _searchController.clear();
     _searchQuery = '';
-    _loadTechniciens(forceRefresh: true);
+    await _loadTechniciens(forceRefresh: true);
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('Assigner le ticket #${ticket.id}'),
-          content: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-              minWidth: MediaQuery.of(context).size.width * 0.8,
-            ),
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // TITRE
+                Text(
+                  'Assigner le ticket #${ticket.id}',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                
                 // TITRE DU TICKET
-                Text('Titre: ${ticket.titre}'),
+                Text('Titre: ${ticket.titre}', style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 16),
                 
                 // CHAMP DE RECHERCHE
@@ -160,7 +166,8 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                 const SizedBox(height: 8),
                 
                 // LISTE FILTRÉE DES TECHNICIENS
-                Expanded(
+                SizedBox(
+                  height: 250,
                   child: _filteredTechniciens.isEmpty
                       ? Center(
                           child: Text(
@@ -191,26 +198,33 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
                           },
                         ),
                 ),
+                const SizedBox(height: 16),
+                
+                // BOUTONS D'ACTION
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Annuler'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _assignTicket(ticket, auto: true);
+                      },
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('Assignation Auto'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF006743),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Assignation automatique'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _assignTicket(ticket, auto: true);
-              },
-              child: const Text('Auto'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-          ],
         ),
       ),
     );

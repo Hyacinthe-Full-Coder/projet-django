@@ -284,12 +284,19 @@ class TicketService {
       if (response.statusCode != 200) {
         throw Exception('Erreur lors de l\'assignation: ${response.body}');
       }
-      // Invalidate cache
+      // Invalidate caches
       _ticketCache.remove(id);
       _lastListTime = DateTime.now().subtract(const Duration(hours: 1));
+      clearTechniciensCache();  // Invalider le cache des techniciens
     } catch (_) {
       rethrow;
     }
+  }
+
+  // INVALIDER LE CACHE DES TECHNICIENS (APRÈS CRÉATION D'UN NOUVEL UTILISATEUR)
+  static void clearTechniciensCache() {
+    _cachedTechniciens = null;
+    _lastTechniciensTime = DateTime.now().subtract(const Duration(hours: 1));
   }
 
   // LISTER LES TECHNICIENS (POUR ASSIGNATION)
@@ -314,10 +321,16 @@ class TicketService {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        _cachedTechniciens =
-            List<Map<String, dynamic>>.from(data['results'] ?? data);
+        // Gère la pagination: si 'results' existe, utiliser ça, sinon supposer que c'est une liste directe
+        List<Map<String, dynamic>> allTechniciens = [];
+        if (data is Map && data.containsKey('results')) {
+          allTechniciens = List<Map<String, dynamic>>.from(data['results'] ?? []);
+        } else if (data is List) {
+          allTechniciens = List<Map<String, dynamic>>.from(data);
+        }
+        _cachedTechniciens = allTechniciens;
         _lastTechniciensTime = DateTime.now();
-        return _cachedTechniciens!;
+        return _cachedTechniciens ?? [];
       }
       throw Exception(
           'Erreur lors du chargement des techniciens: ${response.body}');

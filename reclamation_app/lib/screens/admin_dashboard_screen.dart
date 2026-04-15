@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_drawer.dart';
-import 'statistics_screen.dart';
+import '../widgets/simple_pie_chart.dart';
 import 'create_user_screen.dart';
 import 'login_screen.dart';
 import 'assign_tickets_screen.dart';
@@ -111,86 +111,79 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // SECTION BIENVENUE
                       _buildWelcomeCard(),
                       const SizedBox(height: 24),
+                      if (_dashboardData != null) ...[
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide = constraints.maxWidth >= 1100;
 
-                      // SECTION STATISTIQUES PRINCIPALES
-                        if (_dashboardData != null) ...[
-                          _buildStatCard(
-                            'Total Tickets',
-                            _dashboardData!['total_tickets'].toString(),
-                            Icons.receipt_outlined,
-                            Colors.blue,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // SECTION STATISTIQUES PAR STATUT
-                          const Text(
-                            'Tickets par Statut',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildTicketStatsGrid(
-                              _dashboardData!['tickets_by_status']),
-                          const SizedBox(height: 24),
-
-                          // SECTION UTILISATEURS
-                          const Text(
-                            'Utilisateurs du Système',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildUserStatsGrid(_dashboardData!['users_by_role']),
-                          const SizedBox(height: 24),
-                        ],
-
-                      // SECTION ACTIONS ADMIN
-                      const Text(
-                        'Actions Administrateur',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                            return isWide
+                                ? Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          children: [
+                                            _buildSummaryPanel(_dashboardData!),
+                                            const SizedBox(height: 16),
+                                            _buildActionPanel(),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        flex: 5,
+                                        child: _buildMainOverviewPanel(_dashboardData!),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        flex: 2,
+                                        child: _buildRightPanel(_dashboardData!),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildSummaryPanel(_dashboardData!),
+                                      const SizedBox(height: 16),
+                                      _buildMainOverviewPanel(_dashboardData!),
+                                      const SizedBox(height: 16),
+                                      _buildRightPanel(_dashboardData!),
+                                      const SizedBox(height: 16),
+                                      _buildActionPanel(),
+                                    ],
+                                  );
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildAdminCard(
-                        'Assigner Tickets',
-                        'Gérer l\'assignation des tickets aux techniciens',
-                        Icons.assignment,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AssignTicketsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildAdminCard(
-                        'Créer Utilisateur',
-                        'Ajouter un admin ou technicien',
-                        Icons.person_add,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CreateUserScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('test'),
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth >= 900) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: _buildBottomLeftPanel(_dashboardData!)),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: _buildBottomRightPanel(_dashboardData!)),
+                                ],
+                              );
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildBottomLeftPanel(_dashboardData!),
+                                const SizedBox(height: 16),
+                                _buildBottomRightPanel(_dashboardData!),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -236,6 +229,320 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryPanel(Map<String, dynamic> data) {
+    return Column(
+      children: [
+        _buildStatCard(
+          'Total Tickets',
+          data['total_tickets'].toString(),
+          Icons.receipt_long,
+          Colors.indigo,
+        ),
+        const SizedBox(height: 16),
+        _buildStatCard(
+          'En cours',
+          data['tickets_by_status']['EN_COURS'].toString(),
+          Icons.work_outline,
+          Colors.blue,
+        ),
+        const SizedBox(height: 16),
+        _buildStatCard(
+          'Résolus',
+          data['tickets_by_status']['RESOLU'].toString(),
+          Icons.check_circle_outline,
+          Colors.green,
+        ),
+        const SizedBox(height: 16),
+        _buildStatCard(
+          'Clos',
+          data['tickets_by_status']['CLOS'].toString(),
+          Icons.archive_outlined,
+          Colors.grey,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionPanel() {
+    return Column(
+      children: [
+        _buildAdminCard(
+          'Assigner Tickets',
+          'Gérer l\'assignation des tickets aux techniciens',
+          Icons.assignment,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AssignTicketsScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildAdminCard(
+          'Créer Utilisateur',
+          'Ajouter un admin ou technicien',
+          Icons.person_add,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CreateUserScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainOverviewPanel(Map<String, dynamic> data) {
+    final statusData = Map<String, int>.from(data['tickets_by_status']);
+    final total = statusData.values.fold<int>(0, (sum, value) => sum + value);
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Total Tickets vs Statuts',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...statusData.entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _buildStatusProgressRow(
+                  entry.key,
+                  entry.value,
+                  total == 0 ? 0 : (entry.value / total),
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSummaryMiniCard(
+                    'OUVERT',
+                    statusData['OUVERT'].toString(),
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSummaryMiniCard(
+                    'CLOS',
+                    statusData['CLOS'].toString(),
+                    Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRightPanel(Map<String, dynamic> data) {
+    final users = Map<String, int>.from(data['users_by_role']);
+    final totalUsers = data['total_users'] as int;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Utilisateurs du système',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                _buildUserProgressRow('Administrateurs', users['ADMIN'] ?? 0, totalUsers, Colors.red),
+                const SizedBox(height: 12),
+                _buildUserProgressRow('Techniciens', users['TECHNICIEN'] ?? 0, totalUsers, Colors.blue),
+                const SizedBox(height: 12),
+                _buildUserProgressRow('Citoyens', users['CITOYEN'] ?? 0, totalUsers, Colors.green),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Utilisateurs totaux',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    totalUsers.toString(),
+                    style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomLeftPanel(Map<String, dynamic> data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SimplePieChart(
+          title: 'Répartition des tickets',
+          data: [
+            PieChartData(label: 'Ouverts', value: data['tickets_by_status']['OUVERT'] ?? 0, color: Colors.orange),
+            PieChartData(label: 'En cours', value: data['tickets_by_status']['EN_COURS'] ?? 0, color: Colors.blue),
+            PieChartData(label: 'Résolus', value: data['tickets_by_status']['RESOLU'] ?? 0, color: Colors.green),
+            PieChartData(label: 'Clos', value: data['tickets_by_status']['CLOS'] ?? 0, color: Colors.grey),
+          ],
+          size: 200,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomRightPanel(Map<String, dynamic> data) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Tickets récents',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...((data['recent_tickets'] as List<dynamic>).map((ticket) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      ticket['titre'] ?? 'Sans titre',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ticket['statut'] ?? '',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              );
+            })).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusProgressRow(String label, int value, double ratio) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Text('${(ratio * 100).round()}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: ratio,
+          color: label == 'OUVERT'
+              ? Colors.orange
+              : label == 'EN_COURS'
+                  ? Colors.blue
+                  : label == 'RESOLU'
+                      ? Colors.green
+                      : Colors.grey,
+          backgroundColor: Colors.grey.withOpacity(0.2),
+          minHeight: 8,
+        ),
+        const SizedBox(height: 8),
+        Text('$value tickets', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildUserProgressRow(String label, int value, int total, Color color) {
+    final ratio = total == 0 ? 0.0 : value / total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: ratio,
+          color: color,
+          backgroundColor: Colors.grey.withOpacity(0.2),
+          minHeight: 8,
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('$value personnes', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('${(ratio * 100).round()}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryMiniCard(String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -292,74 +599,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   // GRILLE DES STATISTIQUES DES TICKETS
-  Widget _buildTicketStatsGrid(Map<String, dynamic> stats) {
-    final colors = {
-      'OUVERT': Colors.orange,
-      'EN_COURS': Colors.blue,
-      'RESOLU': Colors.green,
-      'CLOS': Colors.grey,
-    };
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 420;
-        final crossAxisCount = isNarrow ? 1 : 2;
-        final childAspectRatio = isNarrow ? 3.2 : 2.5;
-
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: childAspectRatio,
-          children: stats.entries.map((e) {
-            return _buildStatCard(
-              e.key,
-              e.value.toString(),
-              Icons.circle,
-              colors[e.key] ?? Colors.grey,
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  // GRILLE DES STATISTIQUES DES UTILISATEURS
-  Widget _buildUserStatsGrid(Map<String, dynamic> stats) {
-    final colors = {
-      'ADMIN': Colors.red,
-      'TECHNICIEN': Colors.blue,
-      'CITOYEN': Colors.green,
-    };
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 420;
-        final crossAxisCount = isNarrow ? 1 : 2;
-        final childAspectRatio = isNarrow ? 3.2 : 2.5;
-
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: childAspectRatio,
-          children: stats.entries.map((e) {
-            return _buildStatCard(
-              e.key,
-              e.value.toString(),
-              Icons.group,
-              colors[e.key] ?? Colors.grey,
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
   // CARTE D'ACTION ADMIN
   Widget _buildAdminCard(
     String title,

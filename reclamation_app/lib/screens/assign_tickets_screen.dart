@@ -112,57 +112,128 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
 
   // AFFICHAGE DU DIALOGUE D'ASSIGNATION
   void _showAssignDialog(Ticket ticket) {
+    // Réinitialiser la recherche et rafraîchir les techniciens
+    _searchController.clear();
+    _searchQuery = '';
+    _loadTechniciens(forceRefresh: true);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Assigner le ticket #${ticket.id}'),
-        content: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
-            minWidth: MediaQuery.of(context).size.width * 0.8,
-          ),
-          child: SingleChildScrollView(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Assigner le ticket #${ticket.id}'),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              minWidth: MediaQuery.of(context).size.width * 0.8,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // TITRE DU TICKET
                 Text('Titre: ${ticket.titre}'),
                 const SizedBox(height: 16),
-                const Text('Choisir un technicien:'),
-                const SizedBox(height: 8),
-                ..._techniciens.map(
-                  (tech) => ListTile(
-                    title: Text('${tech['first_name']} ${tech['last_name']}'),
-                    subtitle: Text(tech['email']),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _assignTicket(ticket, technicienId: tech['id']);
-                    },
+                
+                // CHAMP DE RECHERCHE
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un technicien...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                ),
-                const Divider(),
-                ListTile(
-                  title: const Text('Assignation automatique'),
-                  subtitle: const Text(
-                    'Au technicien avec le moins de tickets',
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _assignTicket(ticket, auto: true);
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
                   },
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Choisir un technicien:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                
+                // LISTE FILTRÉE DES TECHNICIENS
+                Expanded(
+                  child: _filteredTechniciens.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchQuery.isEmpty
+                                ? 'Aucun technicien disponible'
+                                : 'Aucun technicien ne correspond',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _filteredTechniciens.length,
+                          itemBuilder: (context, index) {
+                            final tech = _filteredTechniciens[index];
+                            return ListTile(
+                              title: Text(
+                                '${tech['first_name']} ${tech['last_name']}',
+                              ),
+                              subtitle: Text(tech['email']),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                _assignTicket(
+                                  ticket,
+                                  technicienId: tech['id'],
+                                );
+                              },
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Assignation automatique'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _assignTicket(ticket, auto: true);
+              },
+              child: const Text('Auto'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
-          ),
-        ],
       ),
     );
+  }
+
+  // CHARGEMENT FORCÉ DES TECHNICIENS
+  Future<void> _loadTechniciens({bool forceRefresh = false}) async {
+    try {
+      final techniciens = await _ticketService.listerTechniciens(
+        forceRefresh: forceRefresh,
+      );
+      if (mounted) {
+        setState(() {
+          _techniciens = techniciens;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   // CONSTRUCTION DE L'INTERFACE

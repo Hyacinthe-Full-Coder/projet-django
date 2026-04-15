@@ -9,7 +9,7 @@ echo "════════════════════════�
 echo ""
 
 # Aller au répertoire du projet
-cd /home/django/Documents/projet-django
+cd /home/mm/Documents/projet-django
 
 # Activer l'environnement virtuel
 source venv/bin/activate

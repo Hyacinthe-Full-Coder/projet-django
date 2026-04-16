@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../widgets/bottom_navigation_service.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
+import 'profile_screen.dart';
 
 // ÉCRAN TABLEAU DE BORD TECHNICIEN
 class TechnicienDashboardScreen extends StatefulWidget {
@@ -86,6 +87,16 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Mon profil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+          ),
           IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
@@ -493,53 +504,9 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // TITRE
-            const Text(
-              'Mes Tickets Assignés',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // FICHES STATISTIQUES
-            if (_dashboardData != null) ...[
-              GridView.count(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.2,
-                children: [
-                  _buildStatCardCompact(
-                    'En cours',
-                    (_dashboardData?['my_tickets']['EN_COURS'] ?? 0)
-                        .toString(),
-                    Icons.work,
-                    Colors.blue,
-                  ),
-                  _buildStatCardCompact(
-                    'Résolus',
-                    (_dashboardData?['my_tickets']['RESOLU'] ?? 0)
-                        .toString(),
-                    Icons.check_circle,
-                    Colors.green,
-                  ),
-                  _buildStatCardCompact(
-                    'Clos',
-                    (_dashboardData?['my_tickets']['CLOS'] ?? 0)
-                        .toString(),
-                    Icons.archive,
-                    Colors.grey,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // MESSAGE
             const Text(
               'Tickets à Traiter',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
@@ -599,15 +566,8 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 6),
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 10),
             Text(
               value,
               style: const TextStyle(

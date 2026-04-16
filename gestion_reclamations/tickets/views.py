@@ -8,7 +8,7 @@ from django.db import models
 
 from .models import Ticket, Commentaire, HistoriqueStatut, Notification
 from .serializers import (TicketSerializer, CommentaireSerializer, TicketListSerializer, UserLightSerializer, NotificationSerializer)
-from .permissions import IsAuteurOrReadOnly, IsTechnicienOrReadOnly, IsAdminOrReadOnly
+from .permissions import IsAuteurOrReadOnly, IsTechnicienOrReadOnly, IsAdminOrReadOnly, IsTicketAccessAllowed
 from accounts.models import CustomUser
 from accounts.serializers import UserSerializer
 
@@ -20,7 +20,7 @@ class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.select_related('auteur', 'assigne_a').prefetch_related('commentaires', 'historique')
     
     # PERMISSIONS ET FILTRES
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsTicketAccessAllowed]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['statut', 'priorite', 'type_ticket', 'assigne_a__id']
     search_fields = ['titre', 'description']
@@ -35,7 +35,7 @@ class TicketViewSet(viewsets.ModelViewSet):
     # FILTRAGE DES TICKETS SELON LE RÔLE UTILISATEUR
     def get_queryset(self):
         user = self.request.user
-        base_q = Ticket.objects.filter(est_archive=False)  # Exclut les archivés
+        base_q = Ticket.objects.select_related('auteur', 'assigne_a').prefetch_related('commentaires', 'historique').filter(est_archive=False)
         
         if user.role == 'CITOYEN':
             return base_q.filter(auteur=user)              # Citoyen : ses propres tickets
@@ -43,10 +43,40 @@ class TicketViewSet(viewsets.ModelViewSet):
             return base_q.filter(assigne_a=user)           # Technicien : tickets assignés
         return base_q                                       # Admin : tous les tickets
 
+    # SURCHARGER RETRIEVE POUR ACCÈS DIRECT
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            ticket = Ticket.objects.select_related('auteur', 'assigne_a').prefetch_related('commentaires', 'historique').get(pk=kwargs['pk'])
+        except Ticket.DoesNotExist:
+            return Response({'detail': 'Ticket introuvable'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # VÉRIFIER LES DROITS D'ACCÈS
+        user = request.user
+        has_access = False
+        
+        if ticket.est_archive:
+            has_access = False
+        elif user.role == 'ADMIN':
+            has_access = True
+        elif user.role == 'CITOYEN' and ticket.auteur == user:
+            has_access = True
+        elif user.role == 'TECHNICIEN' and ticket.assigne_a == user:
+            has_access = True
+        
+        if not has_access:
+            return Response({'detail': 'Vous n\'avez pas accès à ce ticket.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(ticket)
+        return Response(serializer.data)
+
+
     # ACTION : CHANGER LE STATUT D'UN TICKET
     @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
     def changer_statut(self, request, pk=None):
-        ticket = self.get_object()
+        try:
+            ticket = Ticket.objects.select_related('auteur', 'assigne_a').get(pk=pk)
+        except Ticket.DoesNotExist:
+            return Response({'detail': 'Ticket introuvable'}, status=status.HTTP_404_NOT_FOUND)
 
         # VÉRIFICATION DES DROITS
         if request.user.role not in (CustomUser.Roles.TECHNICIEN, CustomUser.Roles.ADMIN):
@@ -129,9 +159,27 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Response(TicketSerializer(ticket, context={'request': request}).data)
 
     # ACTION : AJOUTER UN COMMENTAIRE
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def commenter(self, request, pk=None):
-        ticket = self.get_object()
+        try:
+            ticket = Ticket.objects.select_related('auteur', 'assigne_a').get(pk=pk)
+        except Ticket.DoesNotExist:
+            return Response({'detail': 'Ticket introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        # VÉRIFICATION DES DROITS D'ACCÈS AU TICKET
+        user = request.user
+        has_access = False
+        
+        if user.role == 'ADMIN':
+            has_access = True
+        elif user.role == 'CITOYEN' and ticket.auteur == user:
+            has_access = True
+        elif user.role == 'TECHNICIEN' and ticket.assigne_a == user:
+            has_access = True
+        
+        if not has_access:
+            return Response({'detail': 'Vous n\'avez pas accès à ce ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CommentaireSerializer(data=request.data)
         if serializer.is_valid():
             commentaire = serializer.save(auteur=request.user, ticket=ticket)
@@ -165,7 +213,10 @@ class TicketViewSet(viewsets.ModelViewSet):
     # ACTION : ASSIGNER UN TECHNICIEN À UN TICKET
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def assigner(self, request, pk=None):
-        ticket = self.get_object()
+        try:
+            ticket = Ticket.objects.select_related('auteur', 'assigne_a').get(pk=pk)
+        except Ticket.DoesNotExist:
+            return Response({'detail': 'Ticket introuvable'}, status=status.HTTP_404_NOT_FOUND)
         
         # SEUL L'ADMIN PEUT ASSIGNER
         if request.user.role != CustomUser.Roles.ADMIN:

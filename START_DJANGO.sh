@@ -9,7 +9,7 @@ echo "════════════════════════�
 echo ""
 
 # Aller au répertoire Django
-cd /home/mmm/Documents/projet-django/gestion_reclamations
+cd /home/mm/Documents/projet-django/gestion_reclamations
 
 # Activer l'environnement virtuel
 source venv/bin/activate

@@ -28,9 +28,9 @@ class ApiConfig {
       case TargetPlatform.android:
         // Pour device physique : utiliser l'IP réelle du serveur
         // Pour émulateur : utiliser 10.0.2.2
-        return '10.216.97.186';
+        return '10.35.134.186';
       case TargetPlatform.iOS:
-        return '10.216.97.186';
+        return '10.35.134.186';
       default:
         return '127.0.0.1';
     }

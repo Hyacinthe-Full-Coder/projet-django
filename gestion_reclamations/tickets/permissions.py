@@ -69,3 +69,44 @@ class IsAdminOrReadOnly(BasePermission):
             return True
         # Seuls les admins peuvent modifier un ticket existant
         return request.user.role == 'ADMIN'
+
+
+# PERMISSION UNIFIÉE POUR LES TICKETS
+class IsTicketAccessAllowed(BasePermission):
+    """
+    Permission unifiée pour contrôler l'accès aux tickets selon le rôle utilisateur.
+    - Citoyens: lisent leurs propres tickets, modifient les leurs
+    - Techniciens: lisent les tickets assignés, modifient les leurs
+    - Admins: accès complet à tous les tickets
+    """
+    
+    def has_permission(self, request, view):
+        # Tous les utilisateurs authentifiés peuvent lire les listes
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # Pour les écritures, seuls les admins et techniciens sont autorisés
+        return request.user.role in ('ADMIN', 'TECHNICIEN', 'CITOYEN')
+    
+    def has_object_permission(self, request, view, obj):
+        # Lecture autorisée pour tous les utilisateurs authentifiés
+        if request.method in SAFE_METHODS:
+            return True
+        
+        user = request.user
+        
+        # Admins: tous les droits
+        if user.role == 'ADMIN':
+            return True
+        
+        # Citoyens: peuvent modifier leurs propres tickets
+        if user.role == 'CITOYEN':
+            return obj.auteur == user
+        
+        # Techniciens: peuvent modifier les tickets assignés et ajouter des commentaires
+        if user.role == 'TECHNICIEN':
+            return obj.assigne_a == user
+        
+        return False
+        
+        return False

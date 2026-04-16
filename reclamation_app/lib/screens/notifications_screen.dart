@@ -3,6 +3,7 @@ import '../services/notification_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/bottom_navigation_service.dart';
 import 'login_screen.dart';
+import 'ticket_detail_screen.dart';
 
 // ÉCRAN DES NOTIFICATIONS
 class NotificationsScreen extends StatefulWidget {
@@ -250,75 +251,90 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       final color = _getNotificationColor(type);
                       final icon = _getNotificationIcon(type);
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        elevation: isRead ? 1 : 3,
-                        color: isRead ? Colors.white : color.withOpacity(0.05),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: color,
-                            child: Icon(
-                              icon,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            notification['titre'] ?? '',
-                            style: TextStyle(
-                              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(
-                                notification['message'] ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                ),
+                      return InkWell(
+                        onTap: () {
+                          // Marquer comme lu si pas encore lu
+                          if (!isRead) {
+                            _markAsRead(notification['id']);
+                          }
+                          // Naviguer vers le ticket s'il existe
+                          if (notification['ticket'] != null) {
+                            final ticketId = notification['ticket'] is Map
+                                ? notification['ticket']['id']
+                                : notification['ticket'];
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TicketDetailScreen(ticketId: ticketId),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDate(notification['date_creation']),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[500],
-                                ),
+                            );
+                          }
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: isRead ? 1 : 3,
+                          color: isRead ? Colors.white : color.withOpacity(0.05),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: color,
+                              child: Icon(
+                                icon,
+                                color: Colors.white,
+                                size: 20,
                               ),
-                            ],
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (value) {
-                              switch (value) {
-                                case 'read':
-                                  if (!isRead) {
-                                    _markAsRead(notification['id']);
-                                  }
-                                  break;
-                                case 'delete':
-                                  _deleteNotification(notification['id']);
-                                  break;
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              if (!isRead)
+                            ),
+                            title: Text(
+                              notification['titre'] ?? '',
+                              style: TextStyle(
+                                fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(
+                                  notification['message'] ?? '',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatDate(notification['date_creation']),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'read':
+                                    if (!isRead) {
+                                      _markAsRead(notification['id']);
+                                    }
+                                    break;
+                                  case 'delete':
+                                    _deleteNotification(notification['id']);
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                if (!isRead)
+                                  const PopupMenuItem(
+                                    value: 'read',
+                                    child: Text('Marquer comme lu'),
+                                  ),
                                 const PopupMenuItem(
-                                  value: 'read',
-                                  child: Text('Marquer comme lu'),
+                                  value: 'delete',
+                                  child: Text('Supprimer'),
                                 ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Supprimer'),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          onTap: () {
-                            if (!isRead) {
-                              _markAsRead(notification['id']);
-                            }
-                          },
                         ),
                       );
                     },

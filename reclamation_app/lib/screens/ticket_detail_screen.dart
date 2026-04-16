@@ -23,6 +23,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool _isLoadingInitial = true;
   String? _errorMessage;
   String? _userRole;
+  int? _currentUserId;
   final TextEditingController _commentController = TextEditingController();
 
   // INITIALISATION
@@ -33,13 +34,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     _loadInitialData();
   }
 
-  // CHARGER LE RÔLE DE L'UTILISATEUR
+  // CHARGER LE RÔLE ET L'ID DE L'UTILISATEUR
   Future<void> _loadUserRole() async {
     try {
       final profile = await _authService.getUserProfile();
       if (mounted && profile != null) {
         setState(() {
           _userRole = profile['role'];
+          _currentUserId = profile['id'];
         });
       }
     } catch (e) {
@@ -98,6 +100,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     if (_commentController.text.trim().isEmpty || _isLoadingAction) return;
     setState(() => _isLoadingAction = true);
     try {
+      final previousStatus = _ticket?.status ?? '';
       await _ticketService.commenter(
         widget.ticketId,
         _commentController.text.trim(),
@@ -105,10 +108,21 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       _commentController.clear();
       await _refreshTicket();
       
-      if (mounted) {
+      // VÉRIFIER SI LE STATUT A CHANGÉ AUTOMATIQUEMENT (TECHNICIEN QUI COMMENTE)
+      if (_userRole == 'TECHNICIEN' && previousStatus == 'OUVERT' && _ticket?.status == 'EN_COURS') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Commentaire ajouté et statut changé automatiquement en "EN COURS"'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Commentaire ajouté')));
+        ).showSnackBar(const SnackBar(content: Text('✓ Commentaire ajouté')));
       }
     } catch (e) {
       if (mounted) {
@@ -365,114 +379,190 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _buildStatusStepper(ticket.status),
-                    const SizedBox(height: 20),
-                    Text(
-                      ticket.titre,
-                      textAlign: TextAlign.center,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      ticket.dateCreation,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              ticket.status,
-                            ).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            ticket.status,
-                            style: TextStyle(
-                              color: _getStatusColor(ticket.status),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getPriorityColor(
-                              ticket.priorite,
-                            ).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            ticket.priorite,
-                            style: TextStyle(
-                              color: _getPriorityColor(ticket.priorite),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    
+                    // SECTION EN-TÊTE : STATUT ET PRIORITÉ (COMME LA MAQUETTE)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            ticket.description,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                          // STATUT VIS À VIS
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Statut',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(
+                                        ticket.status,
+                                      ).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      ticket.status,
+                                      style: TextStyle(
+                                        color: _getStatusColor(ticket.status),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Priorité',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getPriorityColor(
+                                        ticket.priorite,
+                                      ).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      ticket.priorite,
+                                      style: TextStyle(
+                                        color: _getPriorityColor(ticket.priorite),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                           ),
-                          const SizedBox(height: 18),
-                          _buildInfoCard('Type', ticket.type, Icons.category),
-                          const SizedBox(height: 12),
-                          _buildInfoCard(
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    
+                    // SECTION MODIFICATION (TITRE ET DÉTAILS)
+                    Text(
+                      'Modification',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // DATE DE MODIFICATION
+                    Text(
+                      ticket.dateCreation,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // TITRE DU TICKET
+                    Text(
+                      ticket.titre,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // DESCRIPTION / CONTENU
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Text(
+                        ticket.description,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(height: 1.6),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    
+                    // INFORMATIONS DU TICKET (TYPE, AUTEUR, ASSIGNÉ, DATE)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailField('Type', ticket.type, Icons.category),
+                          const SizedBox(height: 14),
+                          _buildDetailField(
                             'Auteur',
                             ticket.auteurNom,
                             Icons.person,
                           ),
                           if (ticket.assigneA != null) ...[
-                            const SizedBox(height: 12),
-                            _buildInfoCard(
+                            const SizedBox(height: 14),
+                            _buildDetailField(
                               'Assigné à',
                               ticket.assigneA!,
                               Icons.assignment_ind,
                             ),
                           ],
-                          const SizedBox(height: 12),
-                          _buildInfoCard(
+                          const SizedBox(height: 14),
+                          _buildDetailField(
                             'Date de création',
                             ticket.dateCreation,
-                            Icons.calendar_today,
+                            Icons.calendar_month,
                           ),
                         ],
                       ),
@@ -658,50 +748,78 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                           final commentaire = ticket.commentaires[index];
                           final auteur =
                               commentaire['auteur'] as Map<String, dynamic>?;
+                          final auteurId = auteur?['id'] as int?;
                           final auteurNom = auteur != null
                               ? '${auteur['first_name']} ${auteur['last_name']}'
                               : 'Inconnu';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.03),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      auteurNom,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                          
+                          // Déterminer si le commentaire a été envoyé par l'utilisateur actuel
+                          final isOwnComment = _currentUserId != null && auteurId == _currentUserId;
+                          
+                          // Couleurs basées sur le type de commentaire (comme WhatsApp)
+                          final backgroundColor = isOwnComment
+                              ? const Color(0xFFDCF8C6) // Vert clair (commentaire envoyé)
+                              : Colors.grey.shade100;   // Gris clair (commentaire reçu)
+                          
+                          return Align(
+                            alignment: isOwnComment
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width * 0.8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: backgroundColor,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          auteurNom,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      commentaire['date'] ?? '',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  commentaire['contenu'] ?? '',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ],
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        commentaire['date'] ?? '',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall?.copyWith(
+                                          fontSize: 11,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    commentaire['contenu'] ?? '',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    softWrap: true,
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -786,7 +904,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     );
   }
 
-  // CARTE D'INFORMATION GÉNÉRIQUE
+  // CARTE D'INFORMATION GÉNÉRIQUE (LEGACY)
   Widget _buildInfoCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -823,6 +941,45 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // CHAMP DE DÉTAIL AMÉLIORÉ (SELON MAQUETTE)
+  Widget _buildDetailField(String label, String value, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          color: const Color(0xFF006743),
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

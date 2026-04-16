@@ -6,6 +6,7 @@ import '../widgets/bottom_navigation_service.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
+import 'ticket_detail_screen.dart';
 
 // ÉCRAN TABLEAU DE BORD TECHNICIEN
 class TechnicienDashboardScreen extends StatefulWidget {
@@ -594,83 +595,94 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
 
   // CARTE TICKET SIMPLE (SANS TICKET CARD)
   Widget _buildSimpleTicketCard(Map<String, dynamic> ticket) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TITRE + STATUT
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    ticket['titre'] ?? 'Sans titre',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(ticket['statut'] ?? ''),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    ticket['statut'] ?? '',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: () {
+        // NAVIGATION VERS LE TICKET
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TicketDetailScreen(ticketId: ticket['id']),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // TITRE + STATUT
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      ticket['titre'] ?? 'Sans titre',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // DESCRIPTION
-            Text(
-              ticket['description'] ?? '',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(ticket['statut'] ?? ''),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      ticket['statut'] ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // TYPE + PRIORITÉ
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Type: ${ticket['type_ticket'] ?? ''}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
+              // DESCRIPTION
+              Text(
+                ticket['description'] ?? '',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+
+              // TYPE + PRIORITÉ
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Type: ${ticket['type_ticket'] ?? ''}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Priorité: ${ticket['priorite'] ?? ''}',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
+                  Text(
+                    'Priorité: ${ticket['priorite'] ?? ''}',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -184,7 +184,32 @@ class TicketViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             commentaire = serializer.save(auteur=request.user, ticket=ticket)
 
-            # CRÉATION DE NOTIFICATIONS
+            # CHANGEMENT AUTOMATIQUE DU STATUT À "EN_COURS" QUAND UN TECHNICIEN COMMENTE
+            ancien_statut = ticket.statut
+            if request.user.role == CustomUser.Roles.TECHNICIEN and ticket.statut == Ticket.Statut.OUVERT:
+                ticket.statut = Ticket.Statut.EN_COURS
+                ticket.save()
+                
+                # Enregistrer dans l'historique
+                HistoriqueStatut.objects.create(
+                    ticket=ticket,
+                    ancien_statut=ancien_statut,
+                    nouveau_statut=Ticket.Statut.EN_COURS,
+                    modifie_par=request.user
+                )
+                
+                # Notification pour l'auteur du ticket
+                creer_notification(
+                    destinataire=ticket.auteur,
+                    type_notification=Notification.TypeNotification.STATUT_CHANGE,
+                    titre=f"Statut de votre ticket modifié",
+                    message=f"Le technicien a commencé à traiter votre ticket '{ticket.titre}'. Statut: OUVERT → EN COURS",
+                    createur=request.user,
+                    ticket=ticket,
+                    donnees_supplementaires={'ancien_statut': ancien_statut, 'nouveau_statut': Ticket.Statut.EN_COURS}
+                )
+
+            # CRÉATION DE NOTIFICATIONS POUR LE NOUVEAU COMMENTAIRE
             # Notification pour l'auteur du ticket (si différent du commentateur)
             if ticket.auteur != request.user:
                 creer_notification(

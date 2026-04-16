@@ -10,6 +10,7 @@ from .models import Ticket, Commentaire, HistoriqueStatut, Notification
 from .serializers import (TicketSerializer, CommentaireSerializer, TicketListSerializer, UserLightSerializer, NotificationSerializer)
 from .permissions import IsAuteurOrReadOnly, IsTechnicienOrReadOnly, IsAdminOrReadOnly
 from accounts.models import CustomUser
+from accounts.serializers import UserSerializer
 
 
 # VIEWSET PRINCIPAL DES TICKETS
@@ -294,12 +295,16 @@ class TicketViewSet(viewsets.ModelViewSet):
 
 
 # VIEWSET POUR LISTER LES TECHNICIENS
-class TechnicienViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet pour lister les techniciens (utilisé par Flutter)"""
+class TechnicienViewSet(viewsets.ModelViewSet):
+    """ViewSet pour gérer les techniciens (CRUD pour admins, lecture pour tous)"""
     queryset = CustomUser.objects.filter(role='TECHNICIEN')
-    serializer_class = UserLightSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
     pagination_class = None  # Désactiver la pagination pour retourner la liste complète
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return UserLightSerializer  # Version légère pour la liste et détail lecture
+        return UserSerializer  # Version complète pour création/modification
 
 
 # FONCTIONS UTILITAIRES POUR LES NOTIFICATIONS

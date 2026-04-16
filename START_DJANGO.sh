@@ -9,10 +9,10 @@ echo "════════════════════════�
 echo ""
 
 # Aller au répertoire Django
-cd /home/mm/Documents/projet-django/gestion_reclamations
+cd /home/mmm/Documents/projet-django/gestion_reclamations
 
 # Activer l'environnement virtuel
-source .venv/bin/activate
+source venv/bin/activate
 
 # Tuer tout processus Django existant
 echo "🛑 Arrêt de tous les serveurs Django existants..."

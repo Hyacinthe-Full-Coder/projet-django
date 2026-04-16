@@ -139,17 +139,6 @@ class AppDrawer extends StatelessWidget {
                   );
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.bar_chart),
-                title: const Text('Statistiques'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StatisticsScreen()),
-                  );
-                },
-              ),
             ] 
             
             // SECTION CITOYEN

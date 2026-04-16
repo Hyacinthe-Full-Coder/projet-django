@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../screens/login_screen.dart';
 import '../services/auth_service.dart';
@@ -50,10 +51,6 @@ class BottomNavigationService extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Icon(Icons.notifications),
           label: 'Notifications',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Stats',
         ),
       ];
     } else if (role == 'CITOYEN') {

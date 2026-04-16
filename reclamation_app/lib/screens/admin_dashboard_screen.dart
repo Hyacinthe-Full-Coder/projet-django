@@ -97,7 +97,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               try {
                 final token = await _authService.getAccessToken();
                 final response = await http.delete(
-                  Uri.parse('${ApiConfig.baseUrl}/api/users/$technicienId/'),
+                  Uri.parse('${ApiConfig.baseUrl}${ApiConfig.techniciensList}$technicienId/'),
                   headers: {
                     'Authorization': 'Bearer $token',
                     'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               try {
                 final token = await _authService.getAccessToken();
                 final response = await http.patch(
-                  Uri.parse('${ApiConfig.baseUrl}/api/users/${technicien['id']}/'),
+                  Uri.parse('${ApiConfig.baseUrl}${ApiConfig.techniciensList}${technicien['id']}/'),
                   headers: {
                     'Authorization': 'Bearer $token',
                     'Content-Type': 'application/json',

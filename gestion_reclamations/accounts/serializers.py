@@ -60,3 +60,37 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.set_password(password)  # Hache le mot de passe
         user.save()
         return user
+
+
+# SÉRIALISEUR POUR LA GESTION COMPLÈTE DES UTILISATEURS PAR ADMIN
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)  # Mot de passe optionnel en mise à jour
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'role', 'telephone', 'password', 'is_active']
+        read_only_fields = ['id']
+
+    # VALIDATION DU RÔLE
+    def validate_role(self, value):
+        if value not in (User.Roles.CITOYEN, User.Roles.ADMIN, User.Roles.TECHNICIEN):
+            raise serializers.ValidationError("Rôle invalide")
+        return value
+
+    # CRÉATION OU MISE À JOUR
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance

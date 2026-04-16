@@ -8,11 +8,13 @@ import 'login_screen.dart';
 class NotificationsScreen extends StatefulWidget {
   final String role;
   final String name;
+  final bool embedded;
 
   const NotificationsScreen({
     super.key,
     required this.role,
     required this.name,
+    this.embedded = false,
   });
 
   @override
@@ -173,6 +175,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return _buildNotificationsContent();
+    }
+
     return Scaffold(
       // BARRE D'APPLICATION (pas de drawer)
       appBar: AppBar(
@@ -197,119 +203,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
         ],
       ),
-
-      // CORPS PRINCIPAL
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refreshNotifications,
-              child: _notifications.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.notifications_none,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Aucune notification',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _notifications.length,
-                      itemBuilder: (context, index) {
-                        final notification = _notifications[index];
-                        final isRead = notification['est_lue'] ?? false;
-                        final type = notification['type_notification'] ?? '';
-                        final color = _getNotificationColor(type);
-                        final icon = _getNotificationIcon(type);
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: isRead ? 1 : 3,
-                          color: isRead ? Colors.white : color.withOpacity(0.05),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: color,
-                              child: Icon(
-                                icon,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            title: Text(
-                              notification['titre'] ?? '',
-                              style: TextStyle(
-                                fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text(
-                                  notification['message'] ?? '',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatDate(notification['date_creation']),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                switch (value) {
-                                  case 'read':
-                                    if (!isRead) {
-                                      _markAsRead(notification['id']);
-                                    }
-                                    break;
-                                  case 'delete':
-                                    _deleteNotification(notification['id']);
-                                    break;
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                if (!isRead)
-                                  const PopupMenuItem(
-                                    value: 'read',
-                                    child: Text('Marquer comme lu'),
-                                  ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Supprimer'),
-                                ),
-                              ],
-                            ),
-                            onTap: () {
-                              if (!isRead) {
-                                _markAsRead(notification['id']);
-                              }
-                            },
-                          ),
-                        );
-                      },
-                    ),
-            ),
-      
-      // FOOTER DE NAVIGATION
+      body: _buildNotificationsContent(),
       bottomNavigationBar: BottomNavigationService(
         role: widget.role,
         selectedIndex: _selectedIndex,
@@ -318,6 +212,118 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildNotificationsContent() {
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _refreshNotifications,
+            child: _notifications.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Aucune notification',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = _notifications[index];
+                      final isRead = notification['est_lue'] ?? false;
+                      final type = notification['type_notification'] ?? '';
+                      final color = _getNotificationColor(type);
+                      final icon = _getNotificationIcon(type);
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: isRead ? 1 : 3,
+                        color: isRead ? Colors.white : color.withOpacity(0.05),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: color,
+                            child: Icon(
+                              icon,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            notification['titre'] ?? '',
+                            style: TextStyle(
+                              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                notification['message'] ?? '',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDate(notification['date_creation']),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) {
+                              switch (value) {
+                                case 'read':
+                                  if (!isRead) {
+                                    _markAsRead(notification['id']);
+                                  }
+                                  break;
+                                case 'delete':
+                                  _deleteNotification(notification['id']);
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              if (!isRead)
+                                const PopupMenuItem(
+                                  value: 'read',
+                                  child: Text('Marquer comme lu'),
+                                ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Supprimer'),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            if (!isRead) {
+                              _markAsRead(notification['id']);
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          );
   }
 
   // FORMATTER LA DATE

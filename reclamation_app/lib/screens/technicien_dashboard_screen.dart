@@ -61,6 +61,17 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     );
   }
 
+  String _getAppBarTitle() {
+    switch (_selectedIndex) {
+      case 1:
+        return 'Mes Tickets';
+      case 2:
+        return 'Notifications';
+      default:
+        return 'Dashboard Technicien';
+    }
+  }
+
   // CONSTRUCTION DE L'INTERFACE
   @override
   Widget build(BuildContext context) {
@@ -71,7 +82,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
     return Scaffold(
       // BARRE D'APPLICATION
       appBar: AppBar(
-        title: const Text('Dashboard Technicien'),
+        title: Text(_getAppBarTitle()),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         actions: [
@@ -107,6 +118,7 @@ class _TechnicienDashboardScreenState extends State<TechnicienDashboardScreen> {
         return NotificationsScreen(
           role: 'TECHNICIEN',
           name: '${_userProfile?['first_name']} ${_userProfile?['last_name']}',
+          embedded: true,
         );
       default:
         return const Center(child: Text('Vue non trouvée'));

@@ -73,7 +73,7 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
       
       // BARRE D'APPLICATION
       appBar: AppBar(
-        title: const Text('Accueil'),
+        title: Text(_getAppBarTitle()),
         backgroundColor: const Color(0xFF006743),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -117,9 +117,26 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
         return _buildCreateTicketView();
       case 3:
         // NOTIFICATIONS
-        return const NotificationsScreen(role: 'CITOYEN', name: 'Citoyen');
+        return const NotificationsScreen(
+          role: 'CITOYEN',
+          name: 'Citoyen',
+          embedded: true,
+        );
       default:
         return _buildHomeView();
+    }
+  }
+
+  String _getAppBarTitle() {
+    switch (_selectedIndex) {
+      case 1:
+        return 'Mes Tickets';
+      case 2:
+        return 'Créer';
+      case 3:
+        return 'Notifications';
+      default:
+        return 'Accueil';
     }
   }
 

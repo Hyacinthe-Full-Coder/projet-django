@@ -26,9 +26,11 @@ class ApiConfig {
     if (kIsWeb) return 'localhost';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return '10.0.2.2';
+        // Pour device physique : utiliser l'IP réelle du serveur
+        // Pour émulateur : utiliser 10.0.2.2
+        return '10.216.97.186';
       case TargetPlatform.iOS:
-        return '127.0.0.1';
+        return '10.216.97.186';
       default:
         return '127.0.0.1';
     }

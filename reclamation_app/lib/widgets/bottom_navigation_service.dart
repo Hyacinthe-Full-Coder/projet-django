@@ -33,10 +33,6 @@ class BottomNavigationService extends StatelessWidget {
           label: 'Assigner',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Stats',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.person_add),
           label: 'Utilisateurs',
         ),
@@ -86,7 +82,6 @@ class BottomNavigationService extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = _getBottomItems();
-    final itemCount = items.length + 1; // +1 pour le bouton Quitter
     
     return BottomAppBar(
       color: const Color(0xFF006743),

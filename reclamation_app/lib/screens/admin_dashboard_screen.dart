@@ -7,7 +7,9 @@ import '../widgets/simple_pie_chart.dart';
 import 'create_user_screen.dart';
 import 'login_screen.dart';
 import 'assign_tickets_screen.dart';
-import 'statistics_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config/api_config.dart';
 
 // ÉCRAN TABLEAU DE BORD ADMINISTRATEUR
 class AdminDashboardScreen extends StatefulWidget {
@@ -21,10 +23,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   
   // SERVICES ET DONNÉES
   final AuthService _authService = AuthService();
+  final TicketService _ticketService = TicketService();
   Map<String, dynamic>? _userProfile;
   Map<String, dynamic>? _dashboardData;
   bool _isLoading = true;
-  int _selectedIndex = 0; // 0: Dashboard, 1: Tickets, 2: Assigner, 3: Stats, 4: Utilisateurs
+  int _selectedIndex = 0; // 0: Dashboard, 1: Tickets, 2: Assigner, 3: Utilisateurs
+  
+  // DONNÉES POUR LA LISTE DES TECHNICIENS
+  List<Map<String, dynamic>> _techniciens = [];
+  bool _loadingTechniciens = false;
+  int _currentPage = 1;
+  final int _itemsPerPage = 5;
 
   // INITIALISATION
   @override
@@ -50,6 +59,164 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // CHARGEMENT DES TECHNICIENS
+  Future<void> _loadTechniciens() async {
+    setState(() => _loadingTechniciens = true);
+    try {
+      final techniciens = await _ticketService.listerTechniciens(forceRefresh: true);
+      setState(() {
+        _techniciens = techniciens;
+        _currentPage = 1;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) setState(() => _loadingTechniciens = false);
+    }
+  }
+
+  // SUPPRESSION D'UN TECHNICIEN
+  Future<void> _deleteTechnicien(int technicienId) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer ce technicien?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final token = await _authService.getAccessToken();
+                final response = await http.delete(
+                  Uri.parse('${ApiConfig.baseUrl}/api/users/$technicienId/'),
+                  headers: {
+                    'Authorization': 'Bearer $token',
+                    'Content-Type': 'application/json',
+                  },
+                );
+                
+                if (mounted) {
+                  if (response.statusCode == 204 || response.statusCode == 200) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Technicien supprimé avec succès')),
+                    );
+                    _loadTechniciens();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erreur: ${response.statusCode}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ÉDITION D'UN TECHNICIEN
+  Future<void> _editTechnicien(Map<String, dynamic> technicien) async {
+    final firstNameCtrl = TextEditingController(text: technicien['first_name'] ?? '');
+    final lastNameCtrl = TextEditingController(text: technicien['last_name'] ?? '');
+    final emailCtrl = TextEditingController(text: technicien['email'] ?? '');
+    final telephoneCtrl = TextEditingController(text: technicien['telephone'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier le technicien'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: firstNameCtrl,
+                decoration: const InputDecoration(labelText: 'Prénom'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: lastNameCtrl,
+                decoration: const InputDecoration(labelText: 'Nom'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: telephoneCtrl,
+                decoration: const InputDecoration(labelText: 'Téléphone'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final token = await _authService.getAccessToken();
+                final response = await http.patch(
+                  Uri.parse('${ApiConfig.baseUrl}/api/users/${technicien['id']}/'),
+                  headers: {
+                    'Authorization': 'Bearer $token',
+                    'Content-Type': 'application/json',
+                  },
+                  body: jsonEncode({
+                    'first_name': firstNameCtrl.text,
+                    'last_name': lastNameCtrl.text,
+                    'email': emailCtrl.text,
+                    'telephone': telephoneCtrl.text,
+                  }),
+                );
+
+                if (mounted) {
+                  if (response.statusCode == 200) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Technicien modifié avec succès')),
+                    );
+                    _loadTechniciens();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erreur: ${response.statusCode}')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
   }
 
   // DÉCONNEXION
@@ -108,6 +275,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         selectedIndex: _selectedIndex,
         onNavigate: (index) {
           setState(() => _selectedIndex = index);
+          // Charger les techniciens si on va à la vue utilisateurs
+          if (index == 3 && _techniciens.isEmpty) {
+            _loadTechniciens();
+          }
         },
       ),
     );
@@ -211,11 +382,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         // ASSIGNER TICKETS
         return const AssignTicketsScreen();
       case 3:
-        // STATISTIQUES
-        return const StatisticsScreen();
-      case 4:
-        // CRÉER UTILISATEUR
-        return CreateUserScreen();
+        // TECHNICIENS
+        return _buildTechniciensListView();
       default:
         return const Center(child: Text('Vue non trouvée'));
     }
@@ -710,49 +878,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 16),
 
-            // RÉSUMÉ STATISTIQUES
-            if (_dashboardData != null) ...[
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.3,
-                children: [
-                  _buildStatCardCompact(
-                    'Ouverts',
-                    (_dashboardData?['tickets_by_status']['OUVERT'] ?? 0)
-                        .toString(),
-                    Icons.schedule,
-                    Colors.orange,
-                  ),
-                  _buildStatCardCompact(
-                    'En cours',
-                    (_dashboardData?['tickets_by_status']['EN_COURS'] ?? 0)
-                        .toString(),
-                    Icons.work,
-                    Colors.blue,
-                  ),
-                  _buildStatCardCompact(
-                    'Résolus',
-                    (_dashboardData?['tickets_by_status']['RESOLU'] ?? 0)
-                        .toString(),
-                    Icons.check_circle,
-                    Colors.green,
-                  ),
-                  _buildStatCardCompact(
-                    'Clos',
-                    (_dashboardData?['tickets_by_status']['CLOS'] ?? 0)
-                        .toString(),
-                    Icons.archive,
-                    Colors.grey,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-
             // TICKETS RÉCENTS
             FutureBuilder<List<Ticket>>(
               future: ticketService.listerTickets(),
@@ -814,50 +939,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // CARTE STATISTIQUE COMPACTE
-  Widget _buildStatCardCompact(
-      String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // CARTE TICKET SIMPLE
   Widget _buildSimpleTicketCard(Ticket ticket) {
@@ -957,5 +1038,182 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  // VUE LISTE DES TECHNICIENS AVEC PAGINATION
+  Widget _buildTechniciensListView() {
+    if (_techniciens.isEmpty && !_loadingTechniciens) {
+      return RefreshIndicator(
+        onRefresh: _loadTechniciens,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                const Text('Aucun technicien', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _loadTechniciens,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Charger les techniciens'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006743),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // PAGINATION
+    final totalPages = (_techniciens.length / _itemsPerPage).ceil();
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+    final paginatedList = _techniciens.sublist(
+      startIndex,
+      endIndex > _techniciens.length ? _techniciens.length : endIndex,
+    );
+
+    return RefreshIndicator(
+      onRefresh: _loadTechniciens,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // TITRE ET BOUTON
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Techniciens',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateUserScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Ajouter'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006743),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // CHARGEMENT
+            if (_loadingTechniciens)
+              const Center(child: CircularProgressIndicator())
+            else if (paginatedList.isEmpty)
+              const Center(child: Text('Aucun technicien à afficher'))
+            else
+              ...paginatedList.asMap().entries.map((entry) {
+                final tech = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // INFO TECHNICIEN
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${tech['first_name']} ${tech['last_name']}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      tech['email'] ?? '',
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      tech['telephone'] ?? 'Pas de téléphone',
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // BOUTTONS DE MODIFICATION ET SUPPRESSION
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                    onPressed: () => _editTechnicien(tech),
+                                    tooltip: 'Modifier',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    onPressed: () => _deleteTechnicien(tech['id']),
+                                    tooltip: 'Supprimer',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+
+            const SizedBox(height: 24),
+
+            // PAGINATION
+            if (totalPages > 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: _currentPage > 1
+                        ? () => setState(() => _currentPage--)
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  Text(
+                    'Page $_currentPage sur $totalPages',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  IconButton(
+                    onPressed: _currentPage < totalPages
+                        ? () => setState(() => _currentPage++)
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

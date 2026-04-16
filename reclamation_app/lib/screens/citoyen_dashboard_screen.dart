@@ -128,7 +128,7 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
     return RefreshIndicator(
       onRefresh: () async => _charger(forceRefresh: true),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -146,7 +146,7 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
               mainAxisSpacing: 10,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.8,
               children: [
                 _buildStatCardCompact(
                   'Total',
@@ -412,31 +412,32 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               title,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 color: Colors.grey.shade700,
                 fontWeight: FontWeight.w500,
               ),

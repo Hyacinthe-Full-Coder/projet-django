@@ -124,105 +124,114 @@ class _AssignTicketsScreenState extends State<AssignTicketsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // TITRE
-                Text(
-                  'Assigner le ticket #${ticket.id}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                
-                // TITRE DU TICKET
-                Text('Titre: ${ticket.titre}', style: const TextStyle(fontSize: 14)),
-                const SizedBox(height: 16),
-                
-                // CHAMP DE RECHERCHE
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher un technicien...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // TITRE
+                  Text(
+                    'Assigner le ticket #${ticket.id}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Choisir un technicien:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                
-                // LISTE FILTRÉE DES TECHNICIENS
-                SizedBox(
-                  height: 250,
-                  child: _filteredTechniciens.isEmpty
-                      ? Center(
-                          child: Text(
-                            _searchQuery.isEmpty
-                                ? 'Aucun technicien disponible'
-                                : 'Aucun technicien ne correspond',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: _filteredTechniciens.length,
-                          itemBuilder: (context, index) {
-                            final tech = _filteredTechniciens[index];
-                            return ListTile(
-                              title: Text(
-                                '${tech['first_name']} ${tech['last_name']}',
-                              ),
-                              subtitle: Text(tech['email']),
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                _assignTicket(
-                                  ticket,
-                                  technicienId: tech['id'],
-                                );
-                              },
-                            );
-                          },
-                        ),
-                ),
-                const SizedBox(height: 16),
-                
-                // BOUTONS D'ACTION
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annuler'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _assignTicket(ticket, auto: true);
-                      },
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('Assignation Auto'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF006743),
+                  const SizedBox(height: 16),
+                  
+                  // TITRE DU TICKET
+                  Text('Titre: ${ticket.titre}', style: const TextStyle(fontSize: 14)),
+                  const SizedBox(height: 16),
+                  
+                  // CHAMP DE RECHERCHE
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher un technicien...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
-                  ],
-                ),
-              ],
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Choisir un technicien:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // LISTE FILTRÉE DES TECHNICIENS
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: _filteredTechniciens.isEmpty
+                        ? Center(
+                            child: Text(
+                              _searchQuery.isEmpty
+                                  ? 'Aucun technicien disponible'
+                                  : 'Aucun technicien ne correspond',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _filteredTechniciens.length,
+                            itemBuilder: (context, index) {
+                              final tech = _filteredTechniciens[index];
+                              return ListTile(
+                                title: Text(
+                                  '${tech['first_name']} ${tech['last_name']}',
+                                ),
+                                subtitle: Text(tech['email']),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  _assignTicket(
+                                    ticket,
+                                    technicienId: tech['id'],
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // BOUTONS D'ACTION
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Annuler'),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _assignTicket(ticket, auto: true);
+                          },
+                          icon: const Icon(Icons.auto_awesome, size: 18),
+                          label: const Text(
+                            'Assignation Auto',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF006743),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

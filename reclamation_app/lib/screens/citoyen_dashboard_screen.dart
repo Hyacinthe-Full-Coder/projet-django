@@ -148,84 +148,17 @@ class _CitoyenDashboardScreenState extends State<CitoyenDashboardScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          children: const [
             // TITRE BIENVENUE
-            const Text(
+            Text(
               'Bienvenue',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
-
-            // STATISTIQUES EN GRILLE
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.8,
-              children: [
-                _buildStatCardCompact(
-                  'Total',
-                  _stats['total']?.toString() ?? '0',
-                  Icons.list_alt,
-                  const Color(0xFF006743),
-                ),
-                _buildStatCardCompact(
-                  'Incidents',
-                  _stats['incidents']?.toString() ?? '0',
-                  Icons.warning_amber_rounded,
-                  const Color(0xFFFFA500),
-                ),
-                _buildStatCardCompact(
-                  'Réclamations',
-                  _stats['reclamations']?.toString() ?? '0',
-                  Icons.receipt_long,
-                  const Color(0xFF9C27B0),
-                ),
-                _buildStatCardCompact(
-                  'Demandes',
-                  _stats['demandes']?.toString() ?? '0',
-                  Icons.help_outline,
-                  const Color(0xFF2196F3),
-                ),
-              ],
+            SizedBox(height: 20),
+            Text(
+              'Utilisez le menu du bas pour naviguer vers vos tickets ou vos notifications.',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
             ),
-            const SizedBox(height: 24),
-
-            // BOUTON CRÉER UN TICKET
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
-                ).then((result) {
-                  if (result == true) {
-                    _charger(forceRefresh: true);
-                    setState(() => _selectedIndex = 1);
-                  }
-                });
-              },
-              icon: const Icon(Icons.add_circle),
-              label: const Text('Créer un ticket'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF006743),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // TICKETS RÉCENTS
-            const Text(
-              'Mes Tickets Récents',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildRecentTickets(),
           ],
         ),
       ),

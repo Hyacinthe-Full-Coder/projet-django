@@ -4,22 +4,32 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 class ApiConfig {
   // Déterminer l'adresse IP du backend selon l'environnement
   static String get baseUrl {
-    // Sur émulateur Android : 10.0.2.2 remplace localhost
-    // Sur device physique Android ou iOS : utiliser l'IP du serveur local
-    // Sur desktop : utiliser localhost
-    // Sur web : utiliser localhost
+    // Production: utiliser Render
+    // Développement: utiliser localhost ou IP locale
     
     const String _backendHost = String.fromEnvironment(
       'BACKEND_HOST',
-      defaultValue: '',
+      defaultValue: 'reclamation-api.onrender.com',
     );
     const String _backendPort = String.fromEnvironment(
       'BACKEND_PORT',
-      defaultValue: '8000',
+      defaultValue: '',
     );
 
-    final host = _backendHost.isNotEmpty ? _backendHost : _defaultHostForPlatform();
-    return 'http://$host:$_backendPort/api';
+    final String host = _backendHost;
+    
+    // Si utiliser un port custom
+    if (_backendPort.isNotEmpty) {
+      return 'http://$host:$_backendPort/api';
+    }
+    
+    // Render utilise HTTPS
+    if (host == 'reclamation-api.onrender.com' || host.contains('onrender.com')) {
+      return 'https://$host/api';
+    }
+    
+    // Localhost et développement utilisent HTTP
+    return 'http://$host/api';
   }
 
   static String _defaultHostForPlatform() {
